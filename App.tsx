@@ -1,32 +1,60 @@
-import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+/**
+ * Sidekick - App Store Connect Management Tool
+ */
 
-function App(): React.JSX.Element {
+import React, {useState} from 'react';
+import {StyleSheet, View} from 'react-native';
+import {Providers} from './src/app';
+import {Sidebar, App} from './src/ui';
+import {PricingScreen} from './src/features/pricing';
+import {colors} from './src/theme';
+
+// Sample apps for development
+const sampleApps: App[] = [
+  {id: '1', name: 'Weather Pro', iconColor: '#007AFF'},
+  {id: '2', name: 'Fitness Tracker', iconColor: '#34C759'},
+  {id: '3', name: 'Photo Editor', iconColor: '#FF9500'},
+  {id: '4', name: 'Notes Plus', iconColor: '#FF3B30'},
+];
+
+function Application(): React.JSX.Element {
+  const [selectedApp, setSelectedApp] = useState<App | null>(sampleApps[0]);
+  const [selectedMenuItem, setSelectedMenuItem] = useState('pricing');
+
+  const renderContent = () => {
+    switch (selectedMenuItem) {
+      case 'pricing':
+        return <PricingScreen appName={selectedApp?.name} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sidekick</Text>
-      <Text style={styles.subtitle}>Your macOS app is running!</Text>
-    </View>
+    <Providers>
+      <View style={styles.container}>
+        <Sidebar
+          apps={sampleApps}
+          selectedApp={selectedApp}
+          onSelectApp={setSelectedApp}
+          selectedMenuItem={selectedMenuItem}
+          onSelectMenuItem={setSelectedMenuItem}
+        />
+        <View style={styles.content}>{renderContent()}</View>
+      </View>
+    </Providers>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    flexDirection: 'row',
+    backgroundColor: colors.content,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  subtitle: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#888888',
+  content: {
+    flex: 1,
   },
 });
 
-export default App;
+export default Application;
