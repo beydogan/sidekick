@@ -5,6 +5,7 @@ const defaultConfig = getDefaultConfig(__dirname);
 const config = {
   resolver: {
     platforms: ['macos', 'ios', 'android'],
+    blockList: [/node_modules\/react-native-screens\/.*/],
   },
 };
 
