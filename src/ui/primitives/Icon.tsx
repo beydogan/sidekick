@@ -43,10 +43,64 @@ export const ChevronDownIcon: React.FC<IconProps> = ({
   );
 };
 
+export const ChevronLeftIcon: React.FC<IconProps> = ({
+  size = 16,
+  color = colors.textSecondary,
+}) => {
+  return (
+    <View style={[styles.iconContainer, {width: size, height: size}]}>
+      <Text style={{fontSize: size, color}}>‹</Text>
+    </View>
+  );
+};
+
+export const SettingsIcon: React.FC<IconProps & {selected?: boolean}> = ({
+  size = 16,
+  color,
+  selected = false,
+}) => {
+  const iconColor = color || (selected ? colors.iconSelected : colors.iconDefault);
+
+  return (
+    <View style={[styles.iconContainer, {width: size, height: size}]}>
+      <Text
+        style={[
+          styles.iconText,
+          {fontSize: size * 0.85, color: iconColor, fontWeight: '500'},
+        ]}>
+        ⚙
+      </Text>
+    </View>
+  );
+};
+
+export const SubscriptionIcon: React.FC<IconProps & {selected?: boolean}> = ({
+  size = 16,
+  color,
+  selected = false,
+}) => {
+  const iconColor = color || (selected ? colors.iconSelected : colors.iconDefault);
+
+  return (
+    <View style={[styles.iconContainer, {width: size, height: size}]}>
+      <Text
+        style={[
+          styles.iconText,
+          {fontSize: size * 0.85, color: iconColor, fontWeight: '500'},
+        ]}>
+        ↻
+      </Text>
+    </View>
+  );
+};
+
 export const AppIcon: React.FC<IconProps> = ({
   size = 32,
-  color = colors.primary,
+  color,
 }) => {
+  // Ensure color is never null/undefined for macOS native layer
+  const bgColor = color || colors.primary;
+
   return (
     <View
       style={[
@@ -55,7 +109,7 @@ export const AppIcon: React.FC<IconProps> = ({
           width: size,
           height: size,
           borderRadius: size * 0.22,
-          backgroundColor: color,
+          backgroundColor: bgColor,
         },
       ]}>
       <Text style={[styles.appIconText, {fontSize: size * 0.5}]}>✦</Text>

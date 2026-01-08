@@ -3,5 +3,5 @@
  */
 
 export {Text} from './Text';
-export {PricingIcon, ChevronDownIcon, AppIcon} from './Icon';
+export {PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, SubscriptionIcon} from './Icon';
 export {Pressable} from './Pressable';

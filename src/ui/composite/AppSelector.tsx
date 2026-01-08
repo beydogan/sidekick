@@ -2,16 +2,10 @@
  * AppSelector - Dropdown for selecting apps
  */
 
-import React, {useState, useRef} from 'react';
-import {
-  View,
-  Pressable,
-  StyleSheet,
-  Modal,
-  ScrollView,
-} from 'react-native';
-import {Text, AppIcon, ChevronDownIcon} from '../primitives';
-import {colors, spacing, radii, typography, shadows} from '../../theme';
+import React, {useState} from 'react';
+import {View, StyleSheet, ScrollView, ActivityIndicator} from 'react-native';
+import {Text, AppIcon, ChevronDownIcon, Pressable} from '../primitives';
+import {colors, spacing, radii, zIndex} from '../../theme';
 
 export interface App {
   id: string;
@@ -23,53 +17,23 @@ interface AppSelectorProps {
   apps: App[];
   selectedApp: App | null;
   onSelectApp: (app: App) => void;
+  isLoading?: boolean;
 }
-
-const DropdownItem: React.FC<{
-  app: App;
-  isSelected: boolean;
-  onPress: () => void;
-}> = ({app, isSelected, onPress}) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={() => setIsHovered(true)}
-      onHoverOut={() => setIsHovered(false)}
-      style={[
-        styles.dropdownItem,
-        isHovered && styles.dropdownItemHovered,
-        isSelected && styles.dropdownItemSelected,
-      ]}>
-      <AppIcon size={24} color={app.iconColor || colors.primary} />
-      <Text variant="body" style={styles.dropdownItemText} numberOfLines={1}>
-        {app.name}
-      </Text>
-      {isSelected && (
-        <Text variant="body" color={colors.primary} style={{fontWeight: '600'}}>
-          ✓
-        </Text>
-      )}
-    </Pressable>
-  );
-};
 
 export const AppSelector: React.FC<AppSelectorProps> = ({
   apps,
   selectedApp,
   onSelectApp,
+  isLoading = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({x: 0, y: 0});
-  const buttonRef = useRef<View>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectorHovered, setSelectorHovered] = useState(false);
 
   const handlePress = () => {
-    buttonRef.current?.measureInWindow((x, y, width, height) => {
-      setDropdownPosition({x, y: y + height + 4});
-      setIsOpen(true);
-    });
+    if (!isLoading && apps.length > 0) {
+      setIsOpen(!isOpen);
+    }
   };
 
   const handleSelectApp = (app: App) => {
@@ -80,49 +44,69 @@ export const AppSelector: React.FC<AppSelectorProps> = ({
   return (
     <View style={styles.container}>
       <Pressable
-        ref={buttonRef}
         onPress={handlePress}
-        onHoverIn={() => setIsHovered(true)}
-        onHoverOut={() => setIsHovered(false)}
-        style={[styles.selector, isHovered && styles.selectorHovered]}>
+        onHoverIn={() => setSelectorHovered(true)}
+        onHoverOut={() => setSelectorHovered(false)}
+        style={[
+          styles.selector,
+          selectorHovered && !isLoading && apps.length > 0 && styles.selectorHovered,
+        ]}>
         <View style={styles.appInfo}>
-          <AppIcon size={28} color={selectedApp?.iconColor || colors.primary} />
+          {isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <AppIcon size={28} color={selectedApp?.iconColor} />
+          )}
           <View style={styles.appDetails}>
             <Text variant="bodyMedium" numberOfLines={1}>
-              {selectedApp?.name || 'Select App'}
+              {isLoading ? 'Loading apps...' : selectedApp?.name || 'Select App'}
             </Text>
-            <Text variant="caption" color={colors.textSecondary} style={{marginTop: 1}}>
+            <Text
+              variant="caption"
+              color={colors.textSecondary}
+              style={styles.subtitle}>
               App Store Connect
             </Text>
           </View>
         </View>
-        <ChevronDownIcon size={10} color={colors.textTertiary} />
+        {!isLoading && apps.length > 0 && (
+          <ChevronDownIcon size={10} color={colors.textTertiary} />
+        )}
       </Pressable>
 
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="none"
-        onRequestClose={() => setIsOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setIsOpen(false)}>
-          <View
-            style={[
-              styles.dropdown,
-              {left: dropdownPosition.x, top: dropdownPosition.y},
-            ]}>
-            <ScrollView style={styles.dropdownScroll} bounces={false}>
-              {apps.map(app => (
-                <DropdownItem
+      {isOpen && (
+        <View style={styles.dropdown}>
+          <ScrollView style={styles.dropdownScroll} bounces={false}>
+            {apps.map(app => {
+              const isSelected = selectedApp?.id === app.id;
+              const isHovered = hoveredId === app.id;
+
+              return (
+                <Pressable
                   key={app.id}
-                  app={app}
-                  isSelected={selectedApp?.id === app.id}
                   onPress={() => handleSelectApp(app)}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        </Pressable>
-      </Modal>
+                  onHoverIn={() => setHoveredId(app.id)}
+                  onHoverOut={() => setHoveredId(null)}
+                  style={[
+                    styles.dropdownItem,
+                    isHovered && styles.dropdownItemHovered,
+                    isSelected && styles.dropdownItemSelected,
+                  ]}>
+                  <AppIcon size={24} color={app.iconColor} />
+                  <Text variant="body" style={styles.dropdownItemText} numberOfLines={1}>
+                    {app.name}
+                  </Text>
+                  {isSelected && (
+                    <Text variant="body" color={colors.primary} style={styles.checkmark}>
+                      ✓
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 };
@@ -131,6 +115,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
+    position: 'relative',
+    zIndex: zIndex.dropdown,
   },
   selector: {
     flexDirection: 'row',
@@ -138,6 +124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.sm,
     borderRadius: radii.lg,
+    backgroundColor: 'transparent',
   },
   selectorHovered: {
     backgroundColor: colors.selectionHover,
@@ -151,19 +138,21 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     flex: 1,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
+  subtitle: {
+    marginTop: 1,
   },
   dropdown: {
     position: 'absolute',
-    width: 220,
+    top: '100%',
+    left: spacing.md,
+    right: spacing.md,
+    marginTop: spacing.xs,
     backgroundColor: colors.dropdownBackground,
     borderRadius: radii.lg,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: colors.dropdownBorder,
-    ...shadows.dropdown,
     overflow: 'hidden',
+    zIndex: zIndex.dropdown,
   },
   dropdownScroll: {
     maxHeight: 300,
@@ -172,6 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.sm,
+    backgroundColor: 'transparent',
   },
   dropdownItemHovered: {
     backgroundColor: colors.selectionHover,
@@ -182,5 +172,8 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     marginLeft: spacing.sm,
     flex: 1,
+  },
+  checkmark: {
+    fontWeight: '600',
   },
 });

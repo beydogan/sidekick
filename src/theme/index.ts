@@ -7,7 +7,6 @@ export {
   spacing,
   radii,
   typography,
-  shadows,
   layout,
   zIndex,
 } from './tokens';

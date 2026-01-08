@@ -8,6 +8,7 @@ import {
   PressableProps as RNPressableProps,
   ViewStyle,
   StyleProp,
+  StyleSheet,
 } from 'react-native';
 
 interface PressableProps extends Omit<RNPressableProps, 'style'> {
@@ -37,9 +38,19 @@ export const Pressable: React.FC<PressableProps> = ({
       onHoverOut={handleHoverOut}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[style, isHovered && hoverStyle, isPressed && pressedStyle]}
+      style={[styles.base, style, isHovered && hoverStyle, isPressed && pressedStyle]}
       {...props}>
       {children}
     </RNPressable>
   );
 };
+
+// Fix RN macOS bug with NULL CGColor for shadows
+const styles = StyleSheet.create({
+  base: {
+    shadowColor: '#000',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: {width: 0, height: 0},
+  },
+});

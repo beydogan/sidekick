@@ -3,8 +3,8 @@
  */
 
 import React, {useState} from 'react';
-import {Pressable, View, StyleSheet, ViewStyle} from 'react-native';
-import {Text} from '../primitives';
+import {View, StyleSheet, ViewStyle} from 'react-native';
+import {Text, Pressable} from '../primitives';
 import {colors, spacing, radii, typography, layout} from '../../theme';
 
 interface MenuItemProps {

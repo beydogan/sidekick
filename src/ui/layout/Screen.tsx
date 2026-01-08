@@ -28,6 +28,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.content,
+    // Explicitly disable shadows to prevent RN macOS bug with NULL CGColor
+    shadowColor: '#000',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: {width: 0, height: 0},
   },
   padded: {
     padding: spacing.xxl,

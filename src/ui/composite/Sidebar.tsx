@@ -7,14 +7,17 @@ import {View, StyleSheet} from 'react-native';
 import {colors, spacing, layout} from '../../theme';
 import {AppSelector, App} from './AppSelector';
 import {MenuItem} from './MenuItem';
-import {PricingIcon} from '../primitives';
+import {PricingIcon, SettingsIcon, SubscriptionIcon} from '../primitives';
+import type {SidebarSection} from '../../app/navigation';
 
 interface SidebarProps {
   apps: App[];
   selectedApp: App | null;
   onSelectApp: (app: App) => void;
-  selectedMenuItem: string;
-  onSelectMenuItem: (item: string) => void;
+  selectedMenuItem: SidebarSection;
+  onSelectMenuItem: (item: SidebarSection) => void;
+  showSettings?: boolean;
+  isLoadingApps?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -23,6 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectApp,
   selectedMenuItem,
   onSelectMenuItem,
+  showSettings = false,
+  isLoadingApps = false,
 }) => {
   return (
     <View style={styles.container}>
@@ -30,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         apps={apps}
         selectedApp={selectedApp}
         onSelectApp={onSelectApp}
+        isLoading={isLoadingApps}
       />
 
       <View style={styles.menu}>
@@ -39,9 +45,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           selected={selectedMenuItem === 'pricing'}
           onPress={() => onSelectMenuItem('pricing')}
         />
+        <MenuItem
+          label="Subscriptions"
+          icon={<SubscriptionIcon selected={selectedMenuItem === 'subscriptions'} />}
+          selected={selectedMenuItem === 'subscriptions'}
+          onPress={() => onSelectMenuItem('subscriptions')}
+        />
       </View>
 
       <View style={styles.spacer} />
+
+      {showSettings && (
+        <View style={styles.bottomMenu}>
+          <MenuItem
+            label="Settings"
+            icon={<SettingsIcon selected={selectedMenuItem === 'settings'} />}
+            selected={selectedMenuItem === 'settings'}
+            onPress={() => onSelectMenuItem('settings')}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -53,6 +76,11 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: colors.sidebarBorder,
     paddingTop: spacing.xxxl,
+    // Explicitly disable shadows to prevent RN macOS bug with NULL CGColor
+    shadowColor: '#000',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: {width: 0, height: 0},
   },
   menu: {
     paddingTop: spacing.md,
@@ -60,5 +88,9 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
+  },
+  bottomMenu: {
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.lg,
   },
 });
