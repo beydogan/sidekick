@@ -14,6 +14,8 @@
 		8F398CE01E813B55A9298DF4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7B51AA1ACE4B95B89D00F0CB /* PrivacyInfo.xcprivacy */; };
 		B64A421A5B921714ECD75BA3 /* libPods-sidekick-macOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BFCE5D54EC773F0C5955663F /* libPods-sidekick-macOS.a */; };
 		E0618F829865C6C5DDB1888D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7B51AA1ACE4B95B89D00F0CB /* PrivacyInfo.xcprivacy */; };
+		MCP001000000000000000001 /* MCPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCP002000000000000000001 /* MCPServer.swift */; };
+		MCP001000000000000000002 /* MCPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = MCP002000000000000000002 /* MCPServer.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +23,9 @@
 		514201492437B4B30078DB4F /* sidekick.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sidekick.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5142014B2437B4B30078DB4F /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5142014C2437B4B30078DB4F /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		MCP002000000000000000001 /* MCPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServer.swift; sourceTree = "<group>"; };
+		MCP002000000000000000002 /* MCPServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MCPServer.m; sourceTree = "<group>"; };
+		MCP002000000000000000003 /* sidekick-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "sidekick-Bridging-Header.h"; sourceTree = "<group>"; };
 		514201512437B4B40078DB4F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		514201542437B4B40078DB4F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		514201562437B4B40078DB4F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -66,6 +71,9 @@
 			children = (
 				5142014B2437B4B30078DB4F /* AppDelegate.h */,
 				5142014C2437B4B30078DB4F /* AppDelegate.mm */,
+				MCP002000000000000000001 /* MCPServer.swift */,
+				MCP002000000000000000002 /* MCPServer.m */,
+				MCP002000000000000000003 /* sidekick-Bridging-Header.h */,
 				514201512437B4B40078DB4F /* Assets.xcassets */,
 				514201532437B4B40078DB4F /* Main.storyboard */,
 				514201562437B4B40078DB4F /* Info.plist */,
@@ -332,6 +340,8 @@
 			files = (
 				514201582437B4B40078DB4F /* main.m in Sources */,
 				5142014D2437B4B30078DB4F /* AppDelegate.mm in Sources */,
+				MCP001000000000000000001 /* MCPServer.swift in Sources */,
+				MCP001000000000000000002 /* MCPServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +420,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = sidekick;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "sidekick-macOS/sidekick-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
@@ -433,6 +444,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = sidekick;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "sidekick-macOS/sidekick-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

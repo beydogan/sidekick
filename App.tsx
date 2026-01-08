@@ -15,6 +15,7 @@ import {colors} from './src/theme';
 import {ui$} from './src/stores/ui';
 import type {App as UIApp} from './src/ui/composite/AppSelector';
 import type {App as APIApp} from './src/libs/appStoreConnect';
+import {useMCPServer} from './src/libs/mcp';
 
 // Determine which section to show based on credentials and menu selection
 function getActiveSection(
@@ -41,6 +42,17 @@ function AppContent(): React.JSX.Element {
   const selectedAppId = useSelector(ui$.selectedAppId);
   const [selectedMenuItem, setSelectedMenuItem] =
     useState<SidebarSection>('pricing');
+
+  // Start MCP server
+  const {isRunning: mcpRunning, start: startMCP} = useMCPServer();
+  useEffect(() => {
+    startMCP();
+  }, []);
+
+  // Log MCP server status
+  useEffect(() => {
+    console.log('[App] MCP Server running:', mcpRunning);
+  }, [mcpRunning]);
 
   // Check credentials on mount
   useEffect(() => {
