@@ -12,8 +12,16 @@
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};
   self.dependencyProvider = [RCTAppDependencyProvider new];
-  
-  return [super applicationDidFinishLaunching:notification];
+
+  [super applicationDidFinishLaunching:notification];
+
+  // Configure window for App Store-like appearance
+  NSWindow *window = [NSApplication sharedApplication].windows.firstObject;
+  if (window) {
+    window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+  }
 }
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
