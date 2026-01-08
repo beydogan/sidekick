@@ -1,8 +1,9 @@
 /**
  * SubscriptionPricingScreen - Configure PPP pricing for a subscription
+ * Refined macOS-native table design
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useCallback, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -13,10 +14,11 @@ import {
 import {useNavigation, useRoute} from '@react-navigation/native';
 import type {RouteProp} from '@react-navigation/native';
 import {Screen, Text, Pressable, NavigationHeader} from '@ui';
-import {colors, spacing, radii} from '@theme';
+import {colors, spacing, radii, typography} from '@theme';
 import {
-  useAllSubscriptionPricePoints,
   useApplyPPPPrices,
+  useSubscriptionPrices,
+  type TerritoryStatus,
 } from '@features/subscriptions/hooks/useSubscriptions';
 import {
   calculatePPPPrices,
@@ -24,78 +26,319 @@ import {
   getDiscountColor,
 } from '@features/subscriptions/utils/pppCalculator';
 import {
-  findNearestPricePoint,
-  formatPrice,
-} from '@features/subscriptions/utils/pricePointMatcher';
-import {getTerritoriesWithPPPData} from '@features/subscriptions/utils/bigMacIndex';
+  getNearestTierForUSDPrice,
+  constructPricePointId,
+  getAvailableTerritories,
+} from '@features/subscriptions/utils/priceTiers';
 import type {SubscriptionsStackParamList} from '@app/navigation/types';
 
 type RouteProps = RouteProp<SubscriptionsStackParamList, 'SubscriptionPricing'>;
+
+// Status indicator with clear visual states
+function StatusIndicator({status}: {status?: TerritoryStatus}) {
+  if (status === 'saving') {
+    return (
+      <View style={statusStyles.container}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+  if (status === 'saved') {
+    return (
+      <View style={[statusStyles.container, statusStyles.savedContainer]}>
+        <Text style={statusStyles.savedIcon}>✓</Text>
+      </View>
+    );
+  }
+  if (status === 'error') {
+    return (
+      <View style={[statusStyles.container, statusStyles.errorContainer]}>
+        <Text style={statusStyles.errorIcon}>!</Text>
+      </View>
+    );
+  }
+  // Pending/default - subtle dot
+  return (
+    <View style={statusStyles.container}>
+      <View style={statusStyles.pendingDot} />
+    </View>
+  );
+}
+
+const statusStyles = StyleSheet.create({
+  container: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.borderLight,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  savedContainer: {
+    backgroundColor: colors.success,
+    borderRadius: 11,
+  },
+  savedIcon: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  errorContainer: {
+    backgroundColor: colors.error,
+    borderRadius: 11,
+  },
+  errorIcon: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+});
+
+// Editable price cell component
+function PriceCell({
+  value,
+  isOverridden,
+  onChange,
+  onClear,
+}: {
+  value: string;
+  isOverridden: boolean;
+  onChange: (v: string) => void;
+  onClear: () => void;
+}) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <View style={priceCellStyles.wrapper}>
+      <View style={[
+        priceCellStyles.container,
+        isOverridden && priceCellStyles.overriddenContainer,
+        isFocused && priceCellStyles.focusedContainer,
+      ]}>
+        <Text style={priceCellStyles.currency}>$</Text>
+        <TextInput
+          style={priceCellStyles.input}
+          value={value}
+          onChangeText={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          keyboardType="decimal-pad"
+          // @ts-ignore - macOS specific prop
+          enableFocusRing={false}
+        />
+      </View>
+      {isOverridden && (
+        <Pressable onPress={onClear} style={priceCellStyles.clearButton}>
+          <View style={priceCellStyles.clearButtonInner}>
+            <Text style={priceCellStyles.clearIcon}>×</Text>
+          </View>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+const priceCellStyles = StyleSheet.create({
+  wrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.md,
+    backgroundColor: colors.sidebar,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    minWidth: 80,
+  },
+  overriddenContainer: {
+    backgroundColor: 'rgba(255, 149, 0, 0.12)',
+    borderColor: 'rgba(255, 149, 0, 0.25)',
+  },
+  focusedContainer: {
+    backgroundColor: colors.content,
+    borderColor: colors.primary,
+  },
+  currency: {
+    ...typography.bodyMedium,
+    color: colors.textSecondary,
+    marginRight: 4,
+  },
+  input: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    textAlign: 'right' as const,
+    padding: 0,
+    flex: 1,
+    outlineStyle: 'none' as any, // macOS specific
+    outlineWidth: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  clearButton: {
+    padding: 2,
+    opacity: 0.7,
+  },
+  clearButtonInner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.warning,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearIcon: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: -1,
+  },
+});
 
 export function SubscriptionPricingScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
   const {subscriptionId, subscriptionName} = route.params;
 
-  const [basePriceUSD, setBasePriceUSD] = useState('9.99');
+  const [basePriceUSD, setBasePriceUSD] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+  const [territoryStatus, setTerritoryStatus] = useState<Record<string, TerritoryStatus>>({});
+  const [priceOverrides, setPriceOverrides] = useState<Record<string, string>>({});
 
-  const {data: pricePointsData, isLoading: pricePointsLoading} =
-    useAllSubscriptionPricePoints(subscriptionId);
+  // Get all available territories (from price tiers data)
+  const allTerritories = useMemo(() => getAvailableTerritories(), []);
+
+  // Fetch current prices
+  const {data: currentPricesData, isLoading: pricesLoading} = useSubscriptionPrices(subscriptionId);
+
+  // Build map of territory -> current local price
+  const currentPrices = useMemo(() => {
+    const map: Record<string, {localPrice: string; pricePointId: string}> = {};
+    if (!currentPricesData?.data) return map;
+
+    for (const price of currentPricesData.data) {
+      const territoryId = price.relationships?.territory?.data?.id;
+      const pricePointId = price.relationships?.subscriptionPricePoint?.data?.id;
+      if (territoryId && pricePointId) {
+        // Find the price point in included data
+        const pricePoint = currentPricesData.included?.find(
+          (inc: any) => inc.type === 'subscriptionPricePoints' && inc.id === pricePointId
+        ) as any;
+        if (pricePoint) {
+          map[territoryId] = {
+            localPrice: pricePoint.attributes?.customerPrice || '0',
+            pricePointId,
+          };
+        }
+      }
+    }
+    return map;
+  }, [currentPricesData]);
+
+  // Set initial base price from USA
+  useEffect(() => {
+    if (currentPrices['USA'] && !basePriceUSD) {
+      setBasePriceUSD(currentPrices['USA'].localPrice);
+    }
+  }, [currentPrices, basePriceUSD]);
+
+  // Callback to update territory status
+  const handleProgress = useCallback((territoryCode: string, status: TerritoryStatus) => {
+    setTerritoryStatus(prev => ({...prev, [territoryCode]: status}));
+  }, []);
 
   const applyPPPPrices = useApplyPPPPrices();
 
-  // Calculate PPP prices for territories that have price points available
+  // Calculate PPP prices for all territories
   const pppPrices = useMemo(() => {
     const price = parseFloat(basePriceUSD);
     if (isNaN(price) || price <= 0) return [];
 
-    // Only calculate for territories that have both PPP data AND price points
-    const pppTerritories = getTerritoriesWithPPPData();
-    const availableTerritories = pricePointsData?.byTerritory
-      ? pppTerritories.filter(t => pricePointsData.byTerritory[t]?.length > 0)
-      : [];
-
     return calculatePPPPrices({
       basePriceUSD: price,
-      territories: availableTerritories,
+      territories: allTerritories,
     });
-  }, [basePriceUSD, pricePointsData?.byTerritory]);
+  }, [basePriceUSD, allTerritories]);
 
-  // Match to Apple price tiers (per territory)
+  // Match to Apple price tiers using static lookup with exchange rate conversion
   const matchedPrices = useMemo(() => {
-    if (!pricePointsData?.byTerritory || pppPrices.length === 0) return [];
+    if (pppPrices.length === 0) return [];
 
     return pppPrices
       .map(ppp => {
-        const territoryPricePoints = pricePointsData.byTerritory[ppp.territoryCode] || [];
-        const matched = findNearestPricePoint(ppp.calculatedPriceUSD, territoryPricePoints);
-        if (!matched) return null;
+        // Check for price override (in USD)
+        const overrideStr = priceOverrides[ppp.territoryCode];
+        const overridePrice = overrideStr ? parseFloat(overrideStr) : null;
+        const targetUsdPrice = overridePrice && !isNaN(overridePrice) ? overridePrice : ppp.calculatedPriceUSD;
+
+        // Find nearest tier in local currency using exchange rates
+        const result = getNearestTierForUSDPrice(ppp.territoryCode, targetUsdPrice);
+        if (!result) return null;
+
+        // Construct the price point ID directly
+        const pricePointId = constructPricePointId(subscriptionId, ppp.territoryCode, result.tier);
+
+        // Get current price for this territory
+        const current = currentPrices[ppp.territoryCode];
+        const currentLocalPrice = current ? parseFloat(current.localPrice) : null;
+        const hasChange = currentLocalPrice !== null && currentLocalPrice !== result.localPrice;
 
         return {
           ...ppp,
-          matchedPricePoint: matched,
-          matchedPrice: parseFloat(matched.attributes.customerPrice),
+          pricePointId,
+          currentLocalPrice,
+          newLocalPrice: result.localPrice,
+          matchedUsdEquivalent: result.usdEquivalent,
+          matchedTier: result.tier,
+          isOverridden: overridePrice !== null && !isNaN(overridePrice),
+          hasChange,
         };
       })
-      .filter((p): p is NonNullable<typeof p> => p !== null);
-  }, [pppPrices, pricePointsData?.byTerritory]);
+      .filter((p): p is NonNullable<typeof p> => p !== null)
+      .sort((a, b) => a.countryName.localeCompare(b.countryName));
+  }, [pppPrices, priceOverrides, subscriptionId, currentPrices]);
+
+  // Handle price override change
+  const handlePriceOverride = useCallback((territoryCode: string, value: string) => {
+    setPriceOverrides(prev => ({...prev, [territoryCode]: value}));
+  }, []);
+
+  // Clear override for a territory
+  const clearOverride = useCallback((territoryCode: string) => {
+    setPriceOverrides(prev => {
+      const next = {...prev};
+      delete next[territoryCode];
+      return next;
+    });
+  }, []);
 
   const handleApplyPrices = async () => {
     if (matchedPrices.length === 0) return;
 
     setIsApplying(true);
+    // Reset all statuses to pending
+    setTerritoryStatus({});
+
     try {
-      const pricesToApply = matchedPrices
-        .filter(p => p.matchedPricePoint)
-        .map(p => ({
-          pricePointId: p.matchedPricePoint!.id,
-          territoryCode: p.territoryCode,
-        }));
+      const pricesToApply = matchedPrices.map(p => ({
+        pricePointId: p.pricePointId,
+        territoryCode: p.territoryCode,
+      }));
 
       await applyPPPPrices.mutateAsync({
         subscriptionId,
         prices: pricesToApply,
+        onProgress: handleProgress,
       });
     } catch (err) {
       console.error('Failed to apply prices:', err);
@@ -126,102 +369,130 @@ export function SubscriptionPricingScreen() {
           <Text variant="bodyMedium" style={styles.sectionTitle}>
             Base USD Price
           </Text>
-          <View style={styles.priceInputRow}>
-            <Text variant="body" color={colors.textSecondary}>
-              $
-            </Text>
-            <TextInput
-              style={styles.priceInput}
-              value={basePriceUSD}
-              onChangeText={setBasePriceUSD}
-              keyboardType="decimal-pad"
-              placeholder="9.99"
-              placeholderTextColor={colors.textTertiary}
-            />
+          <View style={styles.basePriceContainer}>
+            <View style={styles.basePriceInputWrapper}>
+              <Text style={styles.basePriceCurrency}>$</Text>
+              <TextInput
+                style={styles.basePriceInput}
+                value={basePriceUSD}
+                onChangeText={setBasePriceUSD}
+                keyboardType="decimal-pad"
+                placeholder="9.99"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
             <Text variant="caption" color={colors.textTertiary}>
               USD / month
             </Text>
           </View>
         </View>
 
-        {/* PPP Price Preview */}
-        {matchedPrices.length > 0 && (
-          <View style={styles.section}>
-            <Text variant="bodyMedium" style={styles.sectionTitle}>
-              PPP Price Preview
+        {/* Loading state */}
+        {pricesLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator color={colors.primary} />
+            <Text variant="caption" color={colors.textSecondary} style={{marginTop: spacing.sm}}>
+              Loading current prices...
             </Text>
+          </View>
+        )}
+
+        {/* PPP Price Preview */}
+        {!pricesLoading && matchedPrices.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text variant="bodyMedium">PPP Price Preview</Text>
+              <Text variant="caption" color={colors.textTertiary}>
+                {matchedPrices.length} territories
+              </Text>
+            </View>
             <Text
               variant="caption"
               color={colors.textSecondary}
               style={styles.sectionSubtitle}>
-              Prices adjusted based on BigMac Index purchasing power parity
+              Prices adjusted based on BigMac Index · Click any price to override
             </Text>
 
-            {pricePointsLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <View style={styles.priceTable}>
-                {/* Header */}
+            <View style={styles.tableContainer}>
+                {/* Table Header */}
                 <View style={styles.tableHeader}>
-                  <Text
-                    variant="caption"
-                    color={colors.textSecondary}
-                    style={styles.colTerritory}>
+                  <View style={styles.colStatus} />
+                  <Text style={[styles.headerText, styles.colTerritory]}>
                     Territory
                   </Text>
-                  <Text
-                    variant="caption"
-                    color={colors.textSecondary}
-                    style={styles.colPPP}>
-                    PPP
+                  <Text style={[styles.headerText, styles.colIndex]}>
+                    Index
                   </Text>
-                  <Text
-                    variant="caption"
-                    color={colors.textSecondary}
-                    style={styles.colPrice}>
-                    Price
+                  <Text style={[styles.headerText, styles.colPrice]}>
+                    Current → New
                   </Text>
-                  <Text
-                    variant="caption"
-                    color={colors.textSecondary}
-                    style={styles.colDiscount}>
+                  <Text style={[styles.headerText, styles.colAdjustment]}>
                     Adj.
                   </Text>
                 </View>
 
-                {/* Rows */}
-                {matchedPrices.map(price => (
-                  <View key={price.territoryCode} style={styles.tableRow}>
-                    <View style={styles.colTerritory}>
-                      <Text variant="body">{price.countryName}</Text>
-                      <Text variant="caption" color={colors.textTertiary}>
-                        {price.currencyCode}
-                      </Text>
+                {/* Table Body */}
+                <View style={styles.tableBody}>
+                  {matchedPrices.map((price, index) => (
+                    <View
+                      key={price.territoryCode}
+                      style={[
+                        styles.tableRow,
+                        index % 2 === 1 && styles.tableRowAlt,
+                        index === matchedPrices.length - 1 && styles.tableRowLast,
+                      ]}>
+                      <View style={styles.colStatus}>
+                        <StatusIndicator status={territoryStatus[price.territoryCode]} />
+                      </View>
+                      <View style={styles.colTerritory}>
+                        <Text style={styles.countryName}>{price.countryName}</Text>
+                        <Text style={styles.currencyCode}>{price.currencyCode}</Text>
+                      </View>
+                      <View style={styles.colIndex}>
+                        <Text style={styles.indexValue}>
+                          {price.pppIndex.toFixed(2)}
+                        </Text>
+                      </View>
+                      <View style={styles.colPrice}>
+                        <View style={styles.priceChange}>
+                          <Text style={styles.currentPrice}>
+                            {price.currentLocalPrice !== null
+                              ? `${price.currencyCode} ${price.currentLocalPrice.toFixed(2)}`
+                              : '—'}
+                          </Text>
+                          <Text style={styles.priceArrow}>→</Text>
+                          <Text style={[
+                            styles.newPrice,
+                            price.hasChange && styles.newPriceChanged,
+                          ]}>
+                            {price.currencyCode} {price.newLocalPrice.toFixed(2)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.colAdjustment}>
+                        <View
+                          style={[
+                            styles.adjustmentBadge,
+                            {backgroundColor: `${getDiscountColor(price.discountPercent)}15`},
+                          ]}>
+                          <Text
+                            style={[
+                              styles.adjustmentValue,
+                              {color: getDiscountColor(price.discountPercent)},
+                            ]}>
+                            {formatDiscount(price.discountPercent)}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                    <Text
-                      variant="caption"
-                      color={colors.textSecondary}
-                      style={styles.colPPP}>
-                      {price.pppIndex.toFixed(2)}
-                    </Text>
-                    <Text variant="body" style={styles.colPrice}>
-                      {formatPrice(price.matchedPrice, 'USD')}
-                    </Text>
-                    <Text
-                      variant="caption"
-                      color={getDiscountColor(price.discountPercent)}
-                      style={styles.colDiscount}>
-                      {formatDiscount(price.discountPercent)}
-                    </Text>
-                  </View>
-                ))}
+                  ))}
+                </View>
               </View>
-            )}
           </View>
         )}
 
         {/* Apply Button */}
-        {matchedPrices.length > 0 && (
+        {!pricesLoading && matchedPrices.length > 0 && (
           <View style={styles.actions}>
             <Pressable
               style={[
@@ -233,8 +504,8 @@ export function SubscriptionPricingScreen() {
               {isApplying ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text variant="bodyMedium" color="#FFFFFF">
-                  Apply PPP Prices ({matchedPrices.length} territories)
+                <Text style={styles.applyButtonText}>
+                  Apply PPP Prices
                 </Text>
               )}
             </Pressable>
@@ -242,7 +513,7 @@ export function SubscriptionPricingScreen() {
               variant="caption"
               color={colors.textTertiary}
               style={styles.actionHint}>
-              This will update prices for all territories shown above
+              Updates prices for all {matchedPrices.length} territories
             </Text>
           </View>
         )}
@@ -261,10 +532,16 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
   },
   subtitle: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   section: {
     marginBottom: spacing.xxl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   sectionTitle: {
     marginBottom: spacing.sm,
@@ -272,74 +549,182 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     marginBottom: spacing.md,
   },
-  priceInputRow: {
+
+  // Base price input
+  basePriceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  priceInput: {
-    backgroundColor: colors.sidebar,
+  basePriceInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.content,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
-    padding: spacing.sm,
-    width: 100,
-    fontSize: 16,
-    color: colors.textPrimary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  priceTable: {
-    backgroundColor: colors.sidebar,
-    borderRadius: radii.lg,
+  basePriceCurrency: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginRight: spacing.xs,
+  },
+  basePriceInput: {
+    ...typography.body,
+    color: colors.textPrimary,
+    minWidth: 60,
+    padding: 0,
+  },
+
+  // Table
+  loadingContainer: {
+    padding: spacing.xxxl,
+    alignItems: 'center',
+  },
+  tableContainer: {
+    borderRadius: radii.xl,
+    backgroundColor: colors.content,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     overflow: 'hidden',
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.border,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.sidebar,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  colTerritory: {
-    flex: 2,
+  headerText: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  colPPP: {
-    width: 50,
-    textAlign: 'center',
+  tableBody: {
+    backgroundColor: colors.content,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    minHeight: 56,
+  },
+  tableRowAlt: {
+    backgroundColor: 'rgba(0, 0, 0, 0.015)',
+  },
+  tableRowLast: {
+    borderBottomWidth: 0,
+  },
+
+  // Columns
+  colStatus: {
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colTerritory: {
+    flex: 1,
+    paddingRight: spacing.lg,
+  },
+  colIndex: {
+    width: 64,
+    alignItems: 'flex-end',
+    paddingRight: spacing.lg,
   },
   colPrice: {
-    width: 80,
-    textAlign: 'right',
+    width: 200,
+    alignItems: 'flex-end',
+    paddingRight: spacing.md,
   },
-  colDiscount: {
-    width: 60,
-    textAlign: 'right',
+  colAdjustment: {
+    width: 72,
+    alignItems: 'flex-end',
   },
-  actions: {
-    marginTop: spacing.lg,
+
+  // Price change display
+  priceChange: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+  },
+  currentPrice: {
+    ...typography.body,
+    color: colors.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  priceArrow: {
+    ...typography.body,
+    color: colors.textTertiary,
+  },
+  newPrice: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+  newPriceChanged: {
+    color: colors.primary,
+  },
+
+  // Cell content
+  countryName: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
+  },
+  currencyCode: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
+  indexValue: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
+  adjustmentBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radii.md,
+  },
+  adjustmentValue: {
+    ...typography.bodyMedium,
+    fontVariant: ['tabular-nums'],
+  },
+
+  // Actions
+  actions: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
   },
   applyButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
-    borderRadius: radii.md,
+    paddingHorizontal: spacing.xxxl,
+    borderRadius: radii.lg,
     minWidth: 200,
     alignItems: 'center',
   },
   applyButtonDisabled: {
     opacity: 0.6,
   },
+  applyButtonText: {
+    ...typography.bodyMedium,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
   actionHint: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
+    marginTop: spacing.md,
   },
   bottomPadding: {
     height: spacing.xxl,

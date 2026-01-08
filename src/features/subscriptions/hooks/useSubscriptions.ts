@@ -50,13 +50,18 @@ export function useSubscriptionPricePoints(
 }
 
 /**
- * Fetch ALL price points for a subscription (all territories)
+ * Fetch price points for specific territories
  */
-export function useAllSubscriptionPricePoints(subscriptionId: string | undefined) {
+export function usePricePointsForTerritories(
+  subscriptionId: string | undefined,
+  territoryCodes: string[],
+) {
   return useQuery({
-    queryKey: subscriptionKeys.pricePoints(subscriptionId || '', 'all'),
-    queryFn: () => subscriptions.getAllSubscriptionPricePoints(subscriptionId!),
-    enabled: !!subscriptionId,
+    queryKey: subscriptionKeys.pricePoints(subscriptionId || '', territoryCodes.join(',')),
+    queryFn: () => subscriptions.getPricePointsForTerritories(subscriptionId!, territoryCodes),
+    enabled: !!subscriptionId && territoryCodes.length > 0,
+    staleTime: 1000 * 60 * 60, // 1 hour - price points rarely change
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
   });
 }
 
@@ -100,8 +105,10 @@ export function useCreateSubscriptionPrice() {
   });
 }
 
+export type TerritoryStatus = 'pending' | 'saving' | 'saved' | 'error';
+
 /**
- * Mutation to apply PPP prices to multiple territories
+ * Mutation to apply PPP prices to multiple territories (parallel batches)
  */
 export function useApplyPPPPrices() {
   const queryClient = useQueryClient();
@@ -111,29 +118,50 @@ export function useApplyPPPPrices() {
       subscriptionId,
       prices,
       startDate,
+      onProgress,
     }: {
       subscriptionId: string;
       prices: Array<{pricePointId: string; territoryCode: string}>;
       startDate?: string;
+      onProgress?: (territoryCode: string, status: TerritoryStatus) => void;
     }) => {
+      console.log(`[ApplyPPP] Starting to apply prices for ${prices.length} territories`);
+      const startTime = Date.now();
       const results: Array<{territoryCode: string; success: boolean; error?: string}> = [];
 
-      for (const price of prices) {
-        try {
-          await subscriptions.createSubscriptionPrice(
-            subscriptionId,
-            price.pricePointId,
-            startDate,
-          );
-          results.push({territoryCode: price.territoryCode, success: true});
-        } catch (err) {
-          results.push({
-            territoryCode: price.territoryCode,
-            success: false,
-            error: err instanceof Error ? err.message : 'Unknown error',
-          });
-        }
+      // Mark all as saving initially
+      prices.forEach(p => onProgress?.(p.territoryCode, 'saving'));
+
+      // Process in parallel batches
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < prices.length; i += BATCH_SIZE) {
+        const batch = prices.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (price) => {
+            try {
+              await subscriptions.createSubscriptionPrice(
+                subscriptionId,
+                price.pricePointId,
+                price.territoryCode,
+                startDate,
+              );
+              onProgress?.(price.territoryCode, 'saved');
+              return {territoryCode: price.territoryCode, success: true};
+            } catch (err) {
+              const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+              console.error(`[ApplyPPP] Failed for ${price.territoryCode}:`, errorMsg);
+              onProgress?.(price.territoryCode, 'error');
+              return {territoryCode: price.territoryCode, success: false, error: errorMsg};
+            }
+          })
+        );
+        results.push(...batchResults);
+        console.log(`[ApplyPPP] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${results.length}/${prices.length} completed`);
       }
+
+      const elapsed = Date.now() - startTime;
+      const successCount = results.filter(r => r.success).length;
+      console.log(`[ApplyPPP] Completed: ${successCount}/${prices.length} succeeded in ${elapsed}ms`);
 
       return results;
     },
