@@ -143,6 +143,29 @@ export async function del<T>(path: string): Promise<T> {
   return request<T>(path, {method: 'DELETE'});
 }
 
+// Fetch by full URL (for pagination)
+export async function getByUrl<T>(url: string): Promise<T> {
+  const credentials = await loadCredentials();
+  if (!credentials) {
+    throw new AuthenticationError('No credentials configured');
+  }
+
+  const token = generateToken(credentials);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new AppStoreConnectError(`Request failed: ${response.status}`, response.status);
+  }
+
+  return response.json();
+}
+
 // Test connection by fetching current user's apps
 export async function testConnection(): Promise<boolean> {
   try {

@@ -20,7 +20,8 @@ function isTokenValid(): boolean {
 
 export function generateToken(credentials: Credentials): string {
   if (isTokenValid() && cachedToken) {
-    console.log('[JWT] Using cached token');
+    console.log('[JWT] Using cached token', cachedToken.token);
+    console.log('[JWT] Token expires at:', cachedToken.expiresAt);
     return cachedToken.token;
   }
 
