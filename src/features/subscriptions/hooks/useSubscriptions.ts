@@ -1,5 +1,6 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {subscriptions} from '../../../libs/appStoreConnect';
+import type {CreateSubscriptionGroupRequest, CreateSubscriptionRequest} from '../../../libs/appStoreConnect';
 
 // Query keys
 export const subscriptionKeys = {
@@ -168,6 +169,50 @@ export function useApplyPPPPrices() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: subscriptionKeys.prices(variables.subscriptionId),
+      });
+    },
+  });
+}
+
+/**
+ * Mutation to create a subscription group
+ */
+export function useCreateSubscriptionGroup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      appId,
+      request,
+    }: {
+      appId: string;
+      request: CreateSubscriptionGroupRequest;
+    }) => subscriptions.createSubscriptionGroup(appId, request),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: subscriptionKeys.groups(variables.appId),
+      });
+    },
+  });
+}
+
+/**
+ * Mutation to create a subscription
+ */
+export function useCreateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      request,
+    }: {
+      groupId: string;
+      request: CreateSubscriptionRequest;
+    }) => subscriptions.createSubscription(groupId, request),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: subscriptionKeys.list(variables.groupId),
       });
     },
   });

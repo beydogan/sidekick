@@ -39,5 +39,6 @@ export const Text: React.FC<TextProps> = ({
 const styles = StyleSheet.create({
   base: {
     color: colors.textPrimary,
+    cursor: 'default' as 'auto',
   },
 });

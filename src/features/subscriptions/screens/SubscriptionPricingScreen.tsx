@@ -29,6 +29,7 @@ import {
   getNearestTierForUSDPrice,
   constructPricePointId,
   getAvailableTerritories,
+  getExchangeRateForTerritory,
 } from '@features/subscriptions/utils/priceTiers';
 import type {SubscriptionsStackParamList} from '@app/navigation/types';
 
@@ -205,6 +206,122 @@ const priceCellStyles = StyleSheet.create({
   },
 });
 
+// Price display with hover tooltip for local currency
+function PriceWithTooltip({
+  currentUsd,
+  newUsd,
+  currentLocal,
+  newLocal,
+  currencyCode,
+  hasChange,
+}: {
+  currentUsd: number | null;
+  newUsd: number;
+  currentLocal: number | null;
+  newLocal: number;
+  currencyCode: string;
+  hasChange: boolean;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <View
+      style={tooltipStyles.wrapper}
+      // @ts-ignore - macOS specific props
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}>
+      <View style={tooltipStyles.priceRow}>
+        <Text style={tooltipStyles.currentPrice}>
+          {currentUsd !== null ? `$${currentUsd.toFixed(2)}` : '—'}
+        </Text>
+        <Text style={tooltipStyles.arrow}>→</Text>
+        <Text style={[tooltipStyles.newPrice, hasChange && tooltipStyles.newPriceChanged]}>
+          ${newUsd.toFixed(2)}
+        </Text>
+      </View>
+      {isHovered && (
+        <View style={tooltipStyles.tooltip}>
+          <View style={tooltipStyles.tooltipArrow} />
+          <View style={tooltipStyles.tooltipContent}>
+            <Text style={tooltipStyles.tooltipLabel}>Local price</Text>
+            <Text style={tooltipStyles.tooltipValue}>
+              {currentLocal !== null
+                ? `${currencyCode} ${currentLocal.toFixed(2)} → ${currencyCode} ${newLocal.toFixed(2)}`
+                : `${currencyCode} ${newLocal.toFixed(2)}`}
+            </Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const tooltipStyles = StyleSheet.create({
+  wrapper: {
+    position: 'relative',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  currentPrice: {
+    ...typography.body,
+    color: colors.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  arrow: {
+    ...typography.body,
+    color: colors.textTertiary,
+  },
+  newPrice: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+  newPriceChanged: {
+    color: colors.primary,
+  },
+  tooltip: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 6,
+    zIndex: 1000,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    top: -4,
+    right: 16,
+    width: 8,
+    height: 8,
+    backgroundColor: colors.sidebar,
+    transform: [{rotate: '45deg'}],
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: colors.border,
+  },
+  tooltipContent: {
+    backgroundColor: colors.sidebar,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minWidth: 160,
+  },
+  tooltipLabel: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginBottom: 2,
+  },
+  tooltipValue: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+});
+
 export function SubscriptionPricingScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
@@ -293,12 +410,17 @@ export function SubscriptionPricingScreen() {
         const currentLocalPrice = current ? parseFloat(current.localPrice) : null;
         const hasChange = currentLocalPrice !== null && currentLocalPrice !== result.localPrice;
 
+        // Calculate USD equivalent of current price
+        const exchangeRate = getExchangeRateForTerritory(ppp.territoryCode);
+        const currentUsdEquivalent = currentLocalPrice !== null ? currentLocalPrice / exchangeRate : null;
+
         return {
           ...ppp,
           pricePointId,
           currentLocalPrice,
+          currentUsdEquivalent,
           newLocalPrice: result.localPrice,
-          matchedUsdEquivalent: result.usdEquivalent,
+          newUsdEquivalent: result.usdEquivalent,
           matchedTier: result.tier,
           isOverridden: overridePrice !== null && !isNaN(overridePrice),
           hasChange,
@@ -424,7 +546,7 @@ export function SubscriptionPricingScreen() {
                     Index
                   </Text>
                   <Text style={[styles.headerText, styles.colPrice]}>
-                    Current → New
+                    Price (USD)
                   </Text>
                   <Text style={[styles.headerText, styles.colAdjustment]}>
                     Adj.
@@ -454,20 +576,14 @@ export function SubscriptionPricingScreen() {
                         </Text>
                       </View>
                       <View style={styles.colPrice}>
-                        <View style={styles.priceChange}>
-                          <Text style={styles.currentPrice}>
-                            {price.currentLocalPrice !== null
-                              ? `${price.currencyCode} ${price.currentLocalPrice.toFixed(2)}`
-                              : '—'}
-                          </Text>
-                          <Text style={styles.priceArrow}>→</Text>
-                          <Text style={[
-                            styles.newPrice,
-                            price.hasChange && styles.newPriceChanged,
-                          ]}>
-                            {price.currencyCode} {price.newLocalPrice.toFixed(2)}
-                          </Text>
-                        </View>
+                        <PriceWithTooltip
+                          currentUsd={price.currentUsdEquivalent}
+                          newUsd={price.newUsdEquivalent}
+                          currentLocal={price.currentLocalPrice}
+                          newLocal={price.newLocalPrice}
+                          currencyCode={price.currencyCode}
+                          hasChange={price.hasChange}
+                        />
                       </View>
                       <View style={styles.colAdjustment}>
                         <View
@@ -648,30 +764,6 @@ const styles = StyleSheet.create({
   colAdjustment: {
     width: 72,
     alignItems: 'flex-end',
-  },
-
-  // Price change display
-  priceChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  currentPrice: {
-    ...typography.body,
-    color: colors.textTertiary,
-    fontVariant: ['tabular-nums'],
-  },
-  priceArrow: {
-    ...typography.body,
-    color: colors.textTertiary,
-  },
-  newPrice: {
-    ...typography.bodyMedium,
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  newPriceChanged: {
-    color: colors.primary,
   },
 
   // Cell content

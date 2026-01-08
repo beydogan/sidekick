@@ -45,6 +45,8 @@ export type {
   Subscription,
   SubscriptionPricePoint,
   SubscriptionPrice,
+  CreateSubscriptionGroupRequest,
+  CreateSubscriptionRequest,
   APIResponse,
   APIListResponse,
   APIError,

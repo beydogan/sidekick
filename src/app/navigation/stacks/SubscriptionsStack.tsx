@@ -7,6 +7,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {SubscriptionGroupsScreen} from '@features/subscriptions/screens/SubscriptionGroupsScreen';
 import {SubscriptionListScreen} from '@features/subscriptions/screens/SubscriptionListScreen';
 import {SubscriptionPricingScreen} from '@features/subscriptions/screens/SubscriptionPricingScreen';
+import {CreateSubscriptionScreen} from '@features/subscriptions/screens/CreateSubscriptionScreen';
 import type {SubscriptionsStackParamList} from '@app/navigation/types';
 
 const Stack = createStackNavigator<SubscriptionsStackParamList>();
@@ -39,6 +40,14 @@ export function SubscriptionsStack({appId, appName}: SubscriptionsStackProps) {
         name="SubscriptionPricing"
         component={SubscriptionPricingScreen}
       />
+      <Stack.Screen name="CreateSubscription">
+        {props => (
+          <CreateSubscriptionScreen
+            appId={props.route.params.appId}
+            appName={props.route.params.appName}
+          />
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

@@ -211,6 +211,20 @@ export interface SubscriptionPrice {
   };
 }
 
+// Creation request types
+export interface CreateSubscriptionGroupRequest {
+  referenceName: string;
+}
+
+export interface CreateSubscriptionRequest {
+  name: string;
+  productId: string;
+  subscriptionPeriod: Subscription['attributes']['subscriptionPeriod'];
+  familySharable?: boolean;
+  groupLevel?: number;
+  reviewNote?: string;
+}
+
 // API Error
 export interface APIError {
   id?: string;

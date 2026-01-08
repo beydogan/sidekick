@@ -6,6 +6,8 @@ import type {
   SubscriptionPrice,
   APIResponse,
   APIListResponse,
+  CreateSubscriptionGroupRequest,
+  CreateSubscriptionRequest,
 } from '../types';
 
 // List subscription groups for an app
@@ -138,4 +140,49 @@ export async function createSubscriptionPrice(
   const result = await post<APIResponse<SubscriptionPrice>>('/subscriptionPrices', {data});
   console.log(`[ApplyPrice] Success for ${territoryCode || 'unknown'}:`, result.data.id);
   return result;
+}
+
+// Create a subscription group for an app
+export async function createSubscriptionGroup(
+  appId: string,
+  request: CreateSubscriptionGroupRequest,
+): Promise<APIResponse<SubscriptionGroup>> {
+  const data = {
+    type: 'subscriptionGroups',
+    attributes: {
+      referenceName: request.referenceName,
+    },
+    relationships: {
+      app: {
+        data: {type: 'apps', id: appId},
+      },
+    },
+  };
+
+  return post<APIResponse<SubscriptionGroup>>('/subscriptionGroups', {data});
+}
+
+// Create a subscription in a group
+export async function createSubscription(
+  groupId: string,
+  request: CreateSubscriptionRequest,
+): Promise<APIResponse<Subscription>> {
+  const data = {
+    type: 'subscriptions',
+    attributes: {
+      name: request.name,
+      productId: request.productId,
+      subscriptionPeriod: request.subscriptionPeriod,
+      familySharable: request.familySharable ?? false,
+      groupLevel: request.groupLevel ?? 1,
+      reviewNote: request.reviewNote,
+    },
+    relationships: {
+      group: {
+        data: {type: 'subscriptionGroups', id: groupId},
+      },
+    },
+  };
+
+  return post<APIResponse<Subscription>>('/subscriptions', {data});
 }

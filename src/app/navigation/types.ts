@@ -13,6 +13,7 @@ export type SubscriptionsStackParamList = {
   SubscriptionGroups: {appId: string; appName: string};
   SubscriptionList: {groupId: string; groupName: string};
   SubscriptionPricing: {subscriptionId: string; subscriptionName: string};
+  CreateSubscription: {appId: string; appName: string};
 };
 
 // Settings stack routes

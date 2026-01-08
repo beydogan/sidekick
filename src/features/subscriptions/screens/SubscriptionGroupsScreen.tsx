@@ -41,6 +41,13 @@ export function SubscriptionGroupsScreen({
     });
   };
 
+  const handleCreateNew = () => {
+    navigation.navigate('CreateSubscription', {
+      appId,
+      appName: appName ?? 'App',
+    });
+  };
+
   if (isLoading) {
     return (
       <Screen padded={false}>
@@ -79,8 +86,13 @@ export function SubscriptionGroupsScreen({
             No subscription groups found for this app.
           </Text>
           <Text variant="caption" color={colors.textTertiary} style={styles.mt}>
-            Create subscriptions in App Store Connect first.
+            Create your first subscription to get started.
           </Text>
+          <Pressable style={styles.createButton} onPress={handleCreateNew}>
+            <Text variant="bodyMedium" color={colors.content}>
+              Create Subscription
+            </Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -111,6 +123,11 @@ export function SubscriptionGroupsScreen({
             </Pressable>
           ))}
         </View>
+        <Pressable style={styles.createButtonOutline} onPress={handleCreateNew}>
+          <Text variant="bodyMedium" color={colors.primary}>
+            + Create New Subscription
+          </Text>
+        </Pressable>
       </View>
     </Screen>
   );
@@ -151,5 +168,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.textTertiary,
     marginLeft: spacing.sm,
+  },
+  createButton: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  createButtonOutline: {
+    marginTop: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    alignItems: 'center',
   },
 });

@@ -48,6 +48,7 @@ export const Pressable: React.FC<PressableProps> = ({
 // Fix RN macOS bug with NULL CGColor for shadows
 const styles = StyleSheet.create({
   base: {
+    cursor: 'default' as 'auto',
     shadowColor: '#000',
     shadowOpacity: 0,
     shadowRadius: 0,
