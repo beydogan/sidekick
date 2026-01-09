@@ -411,7 +411,7 @@ export function SubscriptionPricingScreen() {
   const route = useRoute<RouteProps>();
   const {subscriptionId, subscriptionName} = route.params;
 
-  const [basePriceUSD, setBasePriceUSD] = useState('');
+  const [basePriceUSD, setBasePriceUSD] = useState('9.99');
   const [isApplying, setIsApplying] = useState(false);
   const [territoryStatus, setTerritoryStatus] = useState<Record<string, TerritoryStatus>>({});
   const [priceOverrides, setPriceOverrides] = useState<Record<string, string>>({});

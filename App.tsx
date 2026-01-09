@@ -6,7 +6,7 @@ import React, {useState, useEffect, useMemo} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useSelector} from '@legendapp/state/react';
 import {Providers} from './src/app';
-import {Sidebar} from './src/ui';
+import {Sidebar, ErrorBoundary} from './src/ui';
 import {SectionNavigator} from './src/app/navigation';
 import type {SidebarSection} from './src/app/navigation';
 import {useApps} from './src/features/pricing/hooks/usePricing';
@@ -135,9 +135,11 @@ function AppContent(): React.JSX.Element {
 
 function Application(): React.JSX.Element {
   return (
-    <Providers>
-      <AppContent />
-    </Providers>
+    <ErrorBoundary>
+      <Providers>
+        <AppContent />
+      </Providers>
+    </ErrorBoundary>
   );
 }
 
