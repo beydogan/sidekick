@@ -1,10 +1,18 @@
 /**
- * Icon primitives
+ * Icon primitives using Lucide icons
  */
 
 import React from 'react';
-import {View, StyleSheet, Image} from 'react-native';
-import {Text} from './Text';
+import {Image} from 'react-native';
+import {
+  DollarSign,
+  ChevronDown,
+  ChevronLeft,
+  Settings,
+  RefreshCw,
+  Info,
+  Globe,
+} from 'lucide-react-native';
 import {colors} from '../../theme';
 
 interface IconProps {
@@ -17,41 +25,24 @@ export const PricingIcon: React.FC<IconProps & {selected?: boolean}> = ({
   color,
   selected = false,
 }) => {
-  const iconColor = color || (selected ? colors.iconSelected : colors.iconDefault);
+  const iconColor =
+    color || (selected ? colors.iconSelected : colors.iconDefault);
 
-  return (
-    <View style={[styles.iconContainer, {width: size, height: size}]}>
-      <Text
-        style={[
-          styles.iconText,
-          {fontSize: size * 0.85, color: iconColor, fontWeight: '600'},
-        ]}>
-        $
-      </Text>
-    </View>
-  );
+  return <DollarSign size={size} color={iconColor} strokeWidth={2} />;
 };
 
 export const ChevronDownIcon: React.FC<IconProps> = ({
   size = 12,
   color = colors.textSecondary,
 }) => {
-  return (
-    <View style={[styles.iconContainer, {width: size, height: size}]}>
-      <Text style={{fontSize: size, color}}>▾</Text>
-    </View>
-  );
+  return <ChevronDown size={size} color={color} strokeWidth={2} />;
 };
 
 export const ChevronLeftIcon: React.FC<IconProps> = ({
   size = 16,
   color = colors.textSecondary,
 }) => {
-  return (
-    <View style={[styles.iconContainer, {width: size, height: size}]}>
-      <Text style={{fontSize: size, color}}>‹</Text>
-    </View>
-  );
+  return <ChevronLeft size={size} color={color} strokeWidth={2} />;
 };
 
 export const SettingsIcon: React.FC<IconProps & {selected?: boolean}> = ({
@@ -59,19 +50,10 @@ export const SettingsIcon: React.FC<IconProps & {selected?: boolean}> = ({
   color,
   selected = false,
 }) => {
-  const iconColor = color || (selected ? colors.iconSelected : colors.iconDefault);
+  const iconColor =
+    color || (selected ? colors.iconSelected : colors.iconDefault);
 
-  return (
-    <View style={[styles.iconContainer, {width: size, height: size}]}>
-      <Text
-        style={[
-          styles.iconText,
-          {fontSize: size * 0.85, color: iconColor, fontWeight: '500'},
-        ]}>
-        ⚙
-      </Text>
-    </View>
-  );
+  return <Settings size={size} color={iconColor} strokeWidth={2} />;
 };
 
 export const SubscriptionIcon: React.FC<IconProps & {selected?: boolean}> = ({
@@ -79,19 +61,32 @@ export const SubscriptionIcon: React.FC<IconProps & {selected?: boolean}> = ({
   color,
   selected = false,
 }) => {
-  const iconColor = color || (selected ? colors.iconSelected : colors.iconDefault);
+  const iconColor =
+    color || (selected ? colors.iconSelected : colors.iconDefault);
 
-  return (
-    <View style={[styles.iconContainer, {width: size, height: size}]}>
-      <Text
-        style={[
-          styles.iconText,
-          {fontSize: size * 0.85, color: iconColor, fontWeight: '500'},
-        ]}>
-        ↻
-      </Text>
-    </View>
-  );
+  return <RefreshCw size={size} color={iconColor} strokeWidth={2} />;
+};
+
+export const AppInfoIcon: React.FC<IconProps & {selected?: boolean}> = ({
+  size = 16,
+  color,
+  selected = false,
+}) => {
+  const iconColor =
+    color || (selected ? colors.iconSelected : colors.iconDefault);
+
+  return <Info size={size} color={iconColor} strokeWidth={2} />;
+};
+
+export const LocaleIcon: React.FC<IconProps & {selected?: boolean}> = ({
+  size = 16,
+  color,
+  selected = false,
+}) => {
+  const iconColor =
+    color || (selected ? colors.iconSelected : colors.iconDefault);
+
+  return <Globe size={size} color={iconColor} strokeWidth={2} />;
 };
 
 interface AppIconProps {
@@ -101,10 +96,7 @@ interface AppIconProps {
 
 const defaultIcon = require('../../../assets/logo.png');
 
-export const AppIcon: React.FC<AppIconProps> = ({
-  size = 32,
-  iconUrl,
-}) => {
+export const AppIcon: React.FC<AppIconProps> = ({size = 32, iconUrl}) => {
   const borderRadius = size * 0.22;
 
   return (
@@ -118,11 +110,3 @@ export const AppIcon: React.FC<AppIconProps> = ({
     />
   );
 };
-
-const styles = StyleSheet.create({
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconText: {},
-});

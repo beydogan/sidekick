@@ -1683,6 +1683,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNSVG (15.15.1):
+    - React-Core
   - SocketRocket (0.7.1)
   - Yoga (0.0.0)
 
@@ -1761,6 +1763,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native-macos/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - SocketRocket (from `../node_modules/react-native-macos/third-party-podspecs/SocketRocket.podspec`)
   - Yoga (from `../node_modules/react-native-macos/ReactCommon/yoga`)
 
@@ -1910,6 +1913,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   SocketRocket:
     :podspec: "../node_modules/react-native-macos/third-party-podspecs/SocketRocket.podspec"
   Yoga:
@@ -1988,6 +1993,7 @@ SPEC CHECKSUMS:
   ReactCommon: a0e352cc9d523089f5a6f3ee1205ab90baaa740e
   RNCAsyncStorage: 23e56519cc41d3bade3c8d4479f7760cb1c11996
   RNGestureHandler: ac511c25b45005c374af1681306c938ca7a52a05
+  RNSVG: 565234ef21c053be08de03f012503c446bfcf755
   SocketRocket: 03f7111df1a343b162bf5b06ead333be808e1e0a
   Yoga: ab4cb9b5ef1db8c37e2ed52fdc1b47ff43ea92bb
 

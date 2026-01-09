@@ -16,11 +16,13 @@
     "@tanstack/react-query": "^5.90.16",
     "@types/jsrsasign": "^10.5.15",
     "jsrsasign": "^11.1.0",
+    "lucide-react-native": "^0.562.0",
     "react": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-macos": "^0.79.1",
-    "react-native-safe-area-context": "^5.6.2"
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-svg": "^15.15.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
