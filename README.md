@@ -4,7 +4,19 @@ A macOS companion for App Store Connect. Open-source, runs locally, your credent
 
 Coming to the App Store soon. Until then, clone and run it yourself.
 
+![Alt text](/docs/screenshot.png?raw=true "Optional Title")
+
 Built with [react-native-macos](https://github.com/microsoft/react-native-macos).
+
+## Features
+
+- **App Information** — Edit app metadata, localized names and subtitles across 37+ languages, and configure app categories
+- **Subscription Management** — Create subscription groups and subscriptions with configurable billing periods and family sharing
+- **PPP Pricing** — Automatic Purchasing Power Parity pricing using BigMac Index - more to come!
+- **Version Tracking** — View app versions and their submission states across iOS, macOS, tvOS, and visionOS
+- **MCP Server** — Built-in Model Context Protocol server for AI assistant integrations
+
+More features are coming!
 
 ## Getting Started
 
