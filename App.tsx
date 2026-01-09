@@ -16,6 +16,7 @@ import {ui$} from './src/stores/ui';
 import type {App as UIApp} from './src/ui/composite/AppSelector';
 import type {App as APIApp} from './src/libs/appStoreConnect';
 import {useMCPServer} from './src/libs/mcp';
+import {fetchAppIcons} from './src/libs/itunes';
 
 // Determine which section to show based on credentials and menu selection
 function getActiveSection(
@@ -39,6 +40,7 @@ function AppContent(): React.JSX.Element {
   const [credentialsReady, setCredentialsReady] = useState<boolean | null>(
     null,
   );
+  const [appIcons, setAppIcons] = useState<Map<string, string>>(new Map());
   const selectedAppId = useSelector(ui$.selectedAppId);
   const [selectedMenuItem, setSelectedMenuItem] =
     useState<SidebarSection>('pricing');
@@ -68,10 +70,22 @@ function AppContent(): React.JSX.Element {
     enabled: credentialsReady === true,
   });
 
-  // Map API apps to UI format
+  // Fetch app icons when apps load
+  useEffect(() => {
+    if (appsData?.data && appsData.data.length > 0) {
+      const appIds = appsData.data.map(app => app.id);
+      fetchAppIcons(appIds).then(setAppIcons);
+    }
+  }, [appsData]);
+
+  // Map API apps to UI format with icons
   const apps: UIApp[] = useMemo(
-    () => appsData?.data.map(mapApiAppToUiApp) ?? [],
-    [appsData],
+    () =>
+      appsData?.data.map(app => ({
+        ...mapApiAppToUiApp(app),
+        iconUrl: appIcons.get(app.id),
+      })) ?? [],
+    [appsData, appIcons],
   );
 
   // Derive selected app from ID

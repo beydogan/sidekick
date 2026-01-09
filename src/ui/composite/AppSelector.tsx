@@ -10,7 +10,7 @@ import {colors, spacing, radii, zIndex} from '../../theme';
 export interface App {
   id: string;
   name: string;
-  iconColor?: string;
+  iconUrl?: string;
 }
 
 interface AppSelectorProps {
@@ -55,7 +55,7 @@ export const AppSelector: React.FC<AppSelectorProps> = ({
           {isLoading ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <AppIcon size={28} color={selectedApp?.iconColor} />
+            <AppIcon size={28} iconUrl={selectedApp?.iconUrl} />
           )}
           <View style={styles.appDetails}>
             <Text variant="bodyMedium" numberOfLines={1}>
@@ -92,7 +92,7 @@ export const AppSelector: React.FC<AppSelectorProps> = ({
                     isHovered && styles.dropdownItemHovered,
                     isSelected && styles.dropdownItemSelected,
                   ]}>
-                  <AppIcon size={24} color={app.iconColor} />
+                  <AppIcon size={24} iconUrl={app.iconUrl} />
                   <Text variant="body" style={styles.dropdownItemText} numberOfLines={1}>
                     {app.name}
                   </Text>

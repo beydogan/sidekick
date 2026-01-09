@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {View, StyleSheet, Image} from 'react-native';
 import {Text} from './Text';
 import {colors} from '../../theme';
 
@@ -94,26 +94,28 @@ export const SubscriptionIcon: React.FC<IconProps & {selected?: boolean}> = ({
   );
 };
 
-export const AppIcon: React.FC<IconProps> = ({
+interface AppIconProps {
+  size?: number;
+  iconUrl?: string;
+}
+
+const defaultIcon = require('../../../assets/logo.png');
+
+export const AppIcon: React.FC<AppIconProps> = ({
   size = 32,
-  color,
+  iconUrl,
 }) => {
-  // Ensure color is never null/undefined for macOS native layer
-  const bgColor = color || colors.primary;
+  const borderRadius = size * 0.22;
 
   return (
-    <View
-      style={[
-        styles.appIconContainer,
-        {
-          width: size,
-          height: size,
-          borderRadius: size * 0.22,
-          backgroundColor: bgColor,
-        },
-      ]}>
-      <Text style={[styles.appIconText, {fontSize: size * 0.5}]}>✦</Text>
-    </View>
+    <Image
+      source={iconUrl ? {uri: iconUrl} : defaultIcon}
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+      }}
+    />
   );
 };
 
@@ -123,12 +125,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconText: {},
-  appIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appIconText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
 });
