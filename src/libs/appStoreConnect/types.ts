@@ -1,5 +1,24 @@
 // App Store Connect API Types
 
+export type Platform = 'IOS' | 'MAC_OS' | 'TV_OS' | 'VISION_OS';
+
+export type AppVersionState =
+  | 'ACCEPTED'
+  | 'DEVELOPER_REJECTED'
+  | 'IN_REVIEW'
+  | 'INVALID_BINARY'
+  | 'METADATA_REJECTED'
+  | 'PENDING_APPLE_RELEASE'
+  | 'PENDING_DEVELOPER_RELEASE'
+  | 'PREPARE_FOR_SUBMISSION'
+  | 'PROCESSING_FOR_DISTRIBUTION'
+  | 'READY_FOR_DISTRIBUTION'
+  | 'READY_FOR_REVIEW'
+  | 'REJECTED'
+  | 'REPLACED_WITH_NEW_VERSION'
+  | 'WAITING_FOR_EXPORT_COMPLIANCE'
+  | 'WAITING_FOR_REVIEW';
+
 export interface Credentials {
   apiKeyId: string;
   issuerId: string;
@@ -65,6 +84,29 @@ export interface App {
         related: string;
         self: string;
       };
+    };
+  };
+}
+
+// App Store Version types
+export interface AppStoreVersion {
+  type: 'appStoreVersions';
+  id: string;
+  attributes: {
+    platform: Platform;
+    versionString: string;
+    appStoreState?: AppStoreState; // deprecated
+    appVersionState: AppVersionState;
+    copyright?: string;
+    reviewType?: 'APP_STORE' | 'NOTARIZATION';
+    releaseType?: 'MANUAL' | 'AFTER_APPROVAL' | 'SCHEDULED';
+    earliestReleaseDate?: string;
+    downloadable?: boolean;
+    createdDate?: string;
+  };
+  relationships?: {
+    app?: {
+      data: {type: 'apps'; id: string};
     };
   };
 }

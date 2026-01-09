@@ -10,11 +10,12 @@ import {Sidebar, ErrorBoundary} from './src/ui';
 import {SectionNavigator} from './src/app/navigation';
 import type {SidebarSection} from './src/app/navigation';
 import {useApps} from './src/features/pricing/hooks/usePricing';
+import {useAppStoreVersions} from './src/features/versions/hooks/useVersions';
 import {hasCredentials} from './src/libs/appStoreConnect';
 import {colors} from './src/theme';
 import {ui$} from './src/stores/ui';
 import type {App as UIApp} from './src/ui/composite/AppSelector';
-import type {App as APIApp} from './src/libs/appStoreConnect';
+import type {App as APIApp, AppStoreVersion} from './src/libs/appStoreConnect';
 import {useMCPServer} from './src/libs/mcp';
 import {fetchAppIcons} from './src/libs/itunes';
 
@@ -69,6 +70,12 @@ function AppContent(): React.JSX.Element {
   } = useApps({
     enabled: credentialsReady === true,
   });
+
+  // Fetch versions for selected app
+  const {data: versionsData, isLoading: versionsLoading} = useAppStoreVersions(
+    credentialsReady ? selectedAppId ?? undefined : undefined,
+  );
+  const versions = versionsData?.data ?? [];
 
   // Fetch app icons when apps load
   useEffect(() => {
@@ -130,6 +137,11 @@ function AppContent(): React.JSX.Element {
         apps={apps}
         selectedApp={selectedApp}
         onSelectApp={handleSelectApp}
+        versions={versions}
+        isLoadingVersions={versionsLoading}
+        onSelectVersion={version => {
+          console.log('Selected version:', version.attributes.versionString);
+        }}
         selectedMenuItem={selectedMenuItem}
         onSelectMenuItem={setSelectedMenuItem}
         showSettings

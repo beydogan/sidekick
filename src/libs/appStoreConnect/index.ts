@@ -28,17 +28,22 @@ import * as appsEndpoints from './endpoints/apps';
 import * as pricingEndpoints from './endpoints/pricing';
 import * as subscriptionsEndpoints from './endpoints/subscriptions';
 import * as appInfoEndpoints from './endpoints/appInfo';
+import * as versionsEndpoints from './endpoints/versions';
 
 export const apps = appsEndpoints;
 export const pricing = pricingEndpoints;
 export const subscriptions = subscriptionsEndpoints;
 export const appInfo = appInfoEndpoints;
+export const versions = versionsEndpoints;
 
 // Types
 export type {
   Credentials,
   CredentialsConfig,
   App,
+  AppStoreVersion,
+  AppVersionState,
+  Platform,
   AppInfo,
   AppInfoLocalization,
   AppCategory,

@@ -7,6 +7,7 @@ import {View, StyleSheet} from 'react-native';
 import {colors, spacing, layout, typography} from '../../theme';
 import {AppSelector, App} from './AppSelector';
 import {MenuItem} from './MenuItem';
+import {VersionsList} from './VersionsList';
 import {Text} from '../primitives';
 import {
   PricingIcon,
@@ -16,11 +17,16 @@ import {
   LocaleIcon,
 } from '../primitives';
 import type {SidebarSection} from '../../app/navigation';
+import type {AppStoreVersion} from '@libs/appStoreConnect';
 
 interface SidebarProps {
   apps: App[];
   selectedApp: App | null;
   onSelectApp: (app: App) => void;
+  versions?: AppStoreVersion[];
+  selectedVersionId?: string | null;
+  onSelectVersion?: (version: AppStoreVersion) => void;
+  isLoadingVersions?: boolean;
   selectedMenuItem: SidebarSection;
   onSelectMenuItem: (item: SidebarSection) => void;
   showSettings?: boolean;
@@ -40,6 +46,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   apps,
   selectedApp,
   onSelectApp,
+  versions = [],
+  selectedVersionId,
+  onSelectVersion,
+  isLoadingVersions = false,
   selectedMenuItem,
   onSelectMenuItem,
   showSettings = false,
@@ -53,6 +63,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onSelectApp={onSelectApp}
         isLoading={isLoadingApps}
       />
+
+      {(versions.length > 0 || isLoadingVersions) && (
+        <VersionsList
+          versions={versions}
+          selectedVersionId={selectedVersionId}
+          onSelectVersion={onSelectVersion}
+          isLoading={isLoadingVersions}
+        />
+      )}
 
       <View style={styles.menu}>
         <SectionHeader title="General" first />
