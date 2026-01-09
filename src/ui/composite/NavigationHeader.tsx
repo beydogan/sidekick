@@ -3,60 +3,115 @@
  */
 
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {View, StyleSheet, ActivityIndicator} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {Text, ChevronLeftIcon, Pressable} from '../primitives';
-import {colors, spacing} from '../../theme';
+import {colors, spacing, radii} from '../../theme';
 
 interface NavigationHeaderProps {
   title: string;
   onBack?: () => void;
   showBack?: boolean;
+  rightAction?: {
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+    loading?: boolean;
+  };
 }
 
 export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
   title,
   onBack,
   showBack = true,
+  rightAction,
 }) => {
+  const navigation = useNavigation();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigation.goBack();
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {showBack && onBack ? (
-        <Pressable style={styles.backButton} onPress={onBack}>
+      {showBack ? (
+        <Pressable style={styles.backButton} onPress={handleBack}>
           <ChevronLeftIcon size={20} color={colors.primary} />
         </Pressable>
       ) : (
-        <View style={styles.backPlaceholder} />
+        <View style={styles.sidePlaceholder} />
       )}
       <Text variant="headline" style={styles.title}>
         {title}
       </Text>
-      <View style={styles.backPlaceholder} />
+      {rightAction ? (
+        <Pressable
+          style={[
+            styles.actionButton,
+            rightAction.disabled && styles.actionButtonDisabled,
+          ]}
+          onPress={rightAction.onPress}
+          disabled={rightAction.disabled || rightAction.loading}
+          hoverStyle={styles.actionButtonHover}>
+          {rightAction.loading ? (
+            <ActivityIndicator size="small" color={colors.content} />
+          ) : (
+            <Text variant="bodyMedium" color={colors.content}>
+              {rightAction.label}
+            </Text>
+          )}
+        </Pressable>
+      ) : (
+        <View style={styles.sidePlaceholder} />
+      )}
     </View>
   );
 };
+
+const HEADER_HEIGHT = 52;
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    height: HEADER_HEIGHT,
     paddingHorizontal: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.content,
+    gap: spacing.sm,
   },
   backButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
+    borderRadius: radii.md,
   },
-  backPlaceholder: {
-    width: 32,
+  sidePlaceholder: {
+    width: 72,
   },
   title: {
     flex: 1,
     textAlign: 'center',
+  },
+  actionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    minWidth: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
+  actionButtonHover: {
+    opacity: 0.9,
   },
 });

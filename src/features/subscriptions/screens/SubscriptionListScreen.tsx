@@ -33,13 +33,9 @@ export function SubscriptionListScreen() {
     });
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   return (
     <Screen padded={false}>
-      <NavigationHeader title={groupName} onBack={handleBack} />
+      <NavigationHeader title={groupName} />
       <View style={styles.content}>
         <Text
           variant="body"

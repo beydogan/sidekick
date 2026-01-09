@@ -322,6 +322,90 @@ const tooltipStyles = StyleSheet.create({
   },
 });
 
+// Index value with indicator for territories without PPP data
+function IndexValueWithIndicator({
+  value,
+  hasPPPData,
+}: {
+  value: number;
+  hasPPPData: boolean;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <View
+      style={indexIndicatorStyles.wrapper}
+      // @ts-ignore - macOS specific props
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}>
+      <Text style={indexIndicatorStyles.value}>
+        {value.toFixed(2)}
+        {!hasPPPData && <Text style={indexIndicatorStyles.asterisk}>*</Text>}
+      </Text>
+      {isHovered && !hasPPPData && (
+        <View style={indexIndicatorStyles.popover}>
+          <View style={indexIndicatorStyles.popoverArrow} />
+          <View style={indexIndicatorStyles.popoverContent}>
+            <Text style={indexIndicatorStyles.popoverText}>
+              No BigMac Index data available.{'\n'}Using base USD price.
+            </Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const indexIndicatorStyles = StyleSheet.create({
+  wrapper: {
+    position: 'relative',
+    alignItems: 'flex-end',
+  },
+  value: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
+  asterisk: {
+    ...typography.body,
+    color: colors.warning,
+    marginLeft: 1,
+  },
+  popover: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 6,
+    zIndex: 1000,
+  },
+  popoverArrow: {
+    position: 'absolute',
+    top: -4,
+    right: 12,
+    width: 8,
+    height: 8,
+    backgroundColor: colors.sidebar,
+    transform: [{rotate: '45deg'}],
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: colors.border,
+  },
+  popoverContent: {
+    backgroundColor: colors.sidebar,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minWidth: 180,
+  },
+  popoverText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    lineHeight: 16,
+  },
+});
+
 export function SubscriptionPricingScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
@@ -571,9 +655,10 @@ export function SubscriptionPricingScreen() {
                         <Text style={styles.currencyCode}>{price.currencyCode}</Text>
                       </View>
                       <View style={styles.colIndex}>
-                        <Text style={styles.indexValue}>
-                          {price.pppIndex.toFixed(2)}
-                        </Text>
+                        <IndexValueWithIndicator
+                          value={price.pppIndex}
+                          hasPPPData={price.hasPPPData}
+                        />
                       </View>
                       <View style={styles.colPrice}>
                         <PriceWithTooltip
@@ -777,11 +862,6 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     marginTop: 2,
     letterSpacing: 0.3,
-  },
-  indexValue: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontVariant: ['tabular-nums'],
   },
   adjustmentBadge: {
     paddingVertical: 4,
