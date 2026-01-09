@@ -2,34 +2,39 @@ import {useEffect, useRef, useState} from 'react';
 import {MCPServerHandler} from './server';
 import {ascTools} from './tools/asc';
 
+interface MCPServerConfig {
+  port?: number;
+  autoStart?: boolean;
+}
+
 interface MCPServerState {
   isRunning: boolean;
   port: number;
   error: string | null;
 }
 
-export function useMCPServer(autoStart = false) {
+export function useMCPServer(config: MCPServerConfig = {}) {
+  const {port = 3000, autoStart = false} = config;
   const serverRef = useRef<MCPServerHandler | null>(null);
   const [state, setState] = useState<MCPServerState>({
     isRunning: false,
-    port: 3000,
+    port,
     error: null,
   });
 
   useEffect(() => {
-    // Initialize server
     const server = new MCPServerHandler({
       name: 'sidekick',
       version: '1.0.0',
-      port: 3000,
+      port,
     });
 
-    // Register ASC tools
     for (const {definition, handler} of ascTools) {
       server.registerTool(definition, handler);
     }
 
     serverRef.current = server;
+    setState(prev => ({...prev, port}));
 
     if (autoStart) {
       startServer();
@@ -38,7 +43,7 @@ export function useMCPServer(autoStart = false) {
     return () => {
       server.stop();
     };
-  }, []);
+  }, [port]);
 
   const startServer = async () => {
     if (!serverRef.current) return;
@@ -46,11 +51,12 @@ export function useMCPServer(autoStart = false) {
     try {
       await serverRef.current.start();
       setState(prev => ({...prev, isRunning: true, error: null}));
-    } catch (error) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start server';
       setState(prev => ({
         ...prev,
         isRunning: false,
-        error: error instanceof Error ? error.message : 'Failed to start server',
+        error: errorMessage,
       }));
     }
   };
@@ -61,10 +67,11 @@ export function useMCPServer(autoStart = false) {
     try {
       await serverRef.current.stop();
       setState(prev => ({...prev, isRunning: false, error: null}));
-    } catch (error) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to stop server';
       setState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to stop server',
+        error: errorMessage,
       }));
     }
   };

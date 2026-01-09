@@ -5,8 +5,10 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
-import {Pressable} from '../../../ui/primitives';
+import {observer} from '@legendapp/state/react';
+import {Pressable, TextInput as StyledTextInput} from '../../../ui/primitives';
 import {colors, spacing, typography, radii} from '../../../theme';
 import {
   savePrivateKey,
@@ -16,12 +18,16 @@ import {
   clearCredentials,
 } from '../../../libs/appStoreConnect';
 import type {CredentialsConfig} from '../../../libs/appStoreConnect';
+import {ui$} from '../../../stores/ui';
+import {useMCPServer} from '../../../libs/mcp/useMCPServer';
 
 interface Props {
   onConnectionSuccess?: () => void;
 }
 
-export function SettingsScreen({onConnectionSuccess}: Props) {
+export const SettingsScreen = observer(function SettingsScreen({
+  onConnectionSuccess,
+}: Props) {
   const [apiKeyId, setApiKeyId] = useState('');
   const [issuerId, setIssuerId] = useState('');
   const [privateKeyContent, setPrivateKeyContent] = useState('');
@@ -29,6 +35,10 @@ export function SettingsScreen({onConnectionSuccess}: Props) {
     'idle' | 'loading' | 'success' | 'error'
   >('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const mcpEnabled = ui$.mcpServer.enabled.get();
+  const mcpPort = ui$.mcpServer.port.get();
+  const mcp = useMCPServer({port: mcpPort});
 
   // Clear error when user types
   const handleApiKeyChange = (text: string) => {
@@ -135,8 +145,69 @@ export function SettingsScreen({onConnectionSuccess}: Props) {
     }
   }
 
+  const handleMCPToggle = async (value: boolean) => {
+    ui$.mcpServer.enabled.set(value);
+    if (value) {
+      await mcp.start();
+    } else {
+      await mcp.stop();
+    }
+  };
+
+  const handleMCPPortChange = (text: string) => {
+    const port = parseInt(text, 10);
+    if (!isNaN(port) && port > 0 && port <= 65535) {
+      ui$.mcpServer.port.set(port);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      {/* MCP Server Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>MCP SERVER</Text>
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <View style={styles.cardRowContent}>
+              <Text style={styles.cardLabel}>Enable Server</Text>
+              <Text style={styles.cardHint}>
+                Start the MCP server for external integrations
+              </Text>
+            </View>
+            <Switch
+              value={mcpEnabled}
+              onValueChange={handleMCPToggle}
+              trackColor={{false: colors.border, true: colors.primary}}
+            />
+          </View>
+          <View style={styles.cardDivider} />
+          <View style={styles.cardRow}>
+            <View style={styles.cardRowContent}>
+              <Text style={styles.cardLabel}>Port</Text>
+            </View>
+            <StyledTextInput
+              style={styles.portInput}
+              value={String(mcpPort)}
+              onChangeText={handleMCPPortChange}
+              keyboardType="numeric"
+              editable={!mcpEnabled}
+              mono
+            />
+          </View>
+        </View>
+        {mcp.isRunning && (
+          <Text style={styles.sectionFooter}>
+            Server running on port {mcpPort}
+          </Text>
+        )}
+        {mcp.error && (
+          <Text style={[styles.sectionFooter, styles.errorFooter]}>
+            {mcp.error}
+          </Text>
+        )}
+      </View>
+
+      {/* App Store Connect Section */}
       <Text style={styles.title}>App Store Connect</Text>
       <Text style={styles.subtitle}>
         Configure your API credentials to connect
@@ -228,13 +299,72 @@ export function SettingsScreen({onConnectionSuccess}: Props) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: spacing.xxl,
     backgroundColor: colors.content,
+  },
+  section: {
+    marginBottom: spacing.xxl,
+    maxWidth: 480,
+  },
+  sectionHeader: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  sectionFooter: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginTop: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  errorFooter: {
+    color: colors.error,
+  },
+  card: {
+    backgroundColor: colors.sidebar,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  cardRowContent: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  cardLabel: {
+    ...typography.body,
+    color: colors.textPrimary,
+  },
+  cardHint: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginLeft: spacing.lg,
+  },
+  portInput: {
+    ...typography.body,
+    color: colors.textPrimary,
+    textAlign: 'right',
+    width: 80,
   },
   title: {
     ...typography.title,
