@@ -1,7 +1,9 @@
 import React, {useState, useEffect, useMemo} from 'react';
 import {View, StyleSheet, ActivityIndicator, ScrollView} from 'react-native';
-import {Screen, Text, TextInput, Pressable} from '@ui';
+import {observer} from '@legendapp/state/react';
+import {Screen, Text, TextInput, Pressable, NavigationHeader} from '@ui';
 import {colors, spacing, radii, typography} from '@theme';
+import {appSettings$} from '@stores/appSettings';
 import {
   useApp,
   useAppInfos,
@@ -94,7 +96,7 @@ interface AppInfoScreenProps {
   appName?: string;
 }
 
-export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
+export const AppInfoScreen: React.FC<AppInfoScreenProps> = observer(({appId}) => {
   const {data: appData, isLoading: appLoading} = useApp(appId);
   const {data: appInfoData, isLoading: appInfoLoading} = useAppInfos(appId);
   const {data: categoriesData} = useAppCategories();
@@ -120,8 +122,18 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   ) || appInfoData?.infos?.find(
     info => info.attributes.appStoreState === 'READY_FOR_SALE',
   ) || appInfoData?.infos?.[0];
-  const localizations = appInfoData?.localizations || [];
+  const allLocalizations = appInfoData?.localizations || [];
   const categories = categoriesData?.data || [];
+
+  const selectedLocales = appSettings$[appId].locales.get() || [];
+  const localizations = useMemo(() => {
+    if (selectedLocales.length === 0) {
+      return allLocalizations;
+    }
+    return allLocalizations.filter(loc =>
+      selectedLocales.includes(loc.attributes.locale),
+    );
+  }, [allLocalizations, selectedLocales]);
 
   const currentPrimaryCategoryId = appInfo?.relationships?.primaryCategory?.data?.id;
   const currentSecondaryCategoryId = appInfo?.relationships?.secondaryCategory?.data?.id;
@@ -246,31 +258,21 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   }
 
   return (
-    <Screen>
+    <Screen padded={false}>
+      <NavigationHeader
+        title="App Information"
+        showBack={false}
+        rightAction={
+          hasChanges
+            ? {
+                label: 'Save',
+                onPress: handleSave,
+                loading: isSaving,
+              }
+            : undefined
+        }
+      />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerRow}>
-          <View style={styles.header}>
-            <Text variant="title">App Information</Text>
-            <Text variant="body" color={colors.textSecondary} style={styles.subtitle}>
-              Any changes will be released with your next app version.
-            </Text>
-          </View>
-          {hasChanges && (
-            <Pressable
-              style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={isSaving}>
-              {isSaving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text variant="bodyMedium" color="#FFFFFF">
-                  Save
-                </Text>
-              )}
-            </Pressable>
-          )}
-        </View>
-
         <View style={styles.content}>
           {/* Localizable Information Section */}
           <View style={styles.section}>
@@ -492,13 +494,14 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
       </ScrollView>
     </Screen>
   );
-};
+});
 
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    padding: spacing.xl,
     paddingBottom: spacing.xxl,
   },
   centered: {
@@ -508,18 +511,6 @@ const styles = StyleSheet.create({
   },
   mt: {
     marginTop: spacing.sm,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-  },
-  header: {
-    flex: 1,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
   },
   content: {
     maxWidth: 560,
@@ -648,17 +639,6 @@ const styles = StyleSheet.create({
   selectChevron: {
     color: colors.textSecondary,
     fontSize: 12,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.md,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
   },
   errorBox: {
     backgroundColor: 'rgba(255, 59, 48, 0.1)',

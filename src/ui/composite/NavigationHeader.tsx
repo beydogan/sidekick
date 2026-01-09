@@ -43,7 +43,7 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
           <ChevronLeftIcon size={20} color={colors.primary} />
         </Pressable>
       ) : (
-        <View style={styles.sidePlaceholder} />
+        <View style={styles.leftPadding} />
       )}
       <Text variant="headline" style={styles.title}>
         {title}
@@ -66,7 +66,7 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
           )}
         </Pressable>
       ) : (
-        <View style={styles.sidePlaceholder} />
+        <View style={styles.rightPlaceholder} />
       )}
     </View>
   );
@@ -92,12 +92,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.md,
   },
-  sidePlaceholder: {
+  leftPadding: {
+    width: spacing.sm,
+  },
+  rightPlaceholder: {
     width: 72,
   },
   title: {
     flex: 1,
-    textAlign: 'center',
   },
   actionButton: {
     backgroundColor: colors.primary,

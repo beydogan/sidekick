@@ -1,9 +1,9 @@
 import React, {useState} from 'react';
 import {View, StyleSheet, ScrollView} from 'react-native';
 import {observer} from '@legendapp/state/react';
-import {Screen, Text, Pressable, TextInput} from '@ui';
+import {Screen, Text, Pressable, TextInput, NavigationHeader} from '@ui';
 import {colors, spacing, radii, typography} from '@theme';
-import {ui$} from '@stores/ui';
+import {appSettings$} from '@stores/appSettings';
 
 const COMMON_LOCALES = [
   {code: 'en-US', name: 'English (US)'},
@@ -54,7 +54,7 @@ export const AppSettingsScreen = observer(function AppSettingsScreen({
   appName,
 }: AppSettingsScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const appSettings = ui$.appSettings[appId].get();
+  const appSettings = appSettings$[appId].get();
   const selectedLocales = appSettings?.locales || [];
 
   const filteredLocales = COMMON_LOCALES.filter(
@@ -64,36 +64,25 @@ export const AppSettingsScreen = observer(function AppSettingsScreen({
   );
 
   const toggleLocale = (code: string) => {
-    const current = ui$.appSettings[appId].locales.get() || [];
+    const current = appSettings$[appId].locales.get() || [];
     if (current.includes(code)) {
-      ui$.appSettings[appId].locales.set(current.filter(c => c !== code));
+      appSettings$[appId].locales.set(current.filter(c => c !== code));
     } else {
-      ui$.appSettings[appId].locales.set([...current, code]);
+      appSettings$[appId].locales.set([...current, code]);
     }
   };
 
   const selectAll = () => {
-    ui$.appSettings[appId].locales.set(COMMON_LOCALES.map(l => l.code));
+    appSettings$[appId].locales.set(COMMON_LOCALES.map(l => l.code));
   };
 
   const clearAll = () => {
-    ui$.appSettings[appId].locales.set([]);
+    appSettings$[appId].locales.set([]);
   };
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text variant="title">App Settings</Text>
-        {appName && (
-          <Text
-            variant="body"
-            color={colors.textSecondary}
-            style={styles.subtitle}>
-            Configure settings for {appName}
-          </Text>
-        )}
-      </View>
-
+    <Screen padded={false}>
+      <NavigationHeader title="App Settings" showBack={false} />
       <View style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>AVAILABLE LOCALES</Text>
@@ -175,15 +164,10 @@ export const AppSettingsScreen = observer(function AppSettingsScreen({
 });
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: spacing.xxl,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-  },
   content: {
     flex: 1,
     maxWidth: 480,
+    padding: spacing.xl,
   },
   section: {},
   sectionHeader: {

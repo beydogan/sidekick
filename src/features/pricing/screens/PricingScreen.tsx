@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
-import {Screen, Text, Pressable} from '../../../ui';
-import {colors, spacing, radii, zIndex} from '../../../theme';
+import {Screen, Text, Pressable, NavigationHeader} from '@ui';
+import {colors, spacing, radii, zIndex} from '@theme';
 import {
   usePriceSchedule,
   usePricePoints,
@@ -86,19 +86,8 @@ export const PricingScreen: React.FC<PricingScreenProps> = ({
   }
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text variant="title">Pricing</Text>
-        {appName && (
-          <Text
-            variant="body"
-            color={colors.textSecondary}
-            style={styles.subtitle}>
-            Manage pricing for {appName}
-          </Text>
-        )}
-      </View>
-
+    <Screen padded={false}>
+      <NavigationHeader title="Pricing" showBack={false} />
       <View style={styles.content}>
         <View style={styles.card}>
           <Text variant="bodyMedium">Base Price (USA)</Text>
@@ -224,15 +213,10 @@ const styles = StyleSheet.create({
   mt: {
     marginTop: spacing.sm,
   },
-  header: {
-    marginBottom: spacing.xxl,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-  },
   content: {
     flex: 1,
     gap: spacing.lg,
+    padding: spacing.xl,
   },
   card: {
     backgroundColor: colors.sidebar,

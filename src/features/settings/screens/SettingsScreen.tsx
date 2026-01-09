@@ -6,20 +6,21 @@ import {
   StyleSheet,
   ActivityIndicator,
   Switch,
+  ScrollView,
 } from 'react-native';
 import {observer} from '@legendapp/state/react';
-import {Pressable, TextInput as StyledTextInput} from '../../../ui/primitives';
-import {colors, spacing, typography, radii} from '../../../theme';
+import {Screen, NavigationHeader, Pressable, TextInput as StyledTextInput} from '@ui';
+import {colors, spacing, typography, radii} from '@theme';
 import {
   savePrivateKey,
   saveCredentialsConfig,
   loadCredentialsConfig,
   testConnection,
   clearCredentials,
-} from '../../../libs/appStoreConnect';
-import type {CredentialsConfig} from '../../../libs/appStoreConnect';
-import {ui$} from '../../../stores/ui';
-import {useMCPServer} from '../../../libs/mcp/useMCPServer';
+} from '@libs/appStoreConnect';
+import type {CredentialsConfig} from '@libs/appStoreConnect';
+import {ui$} from '@stores/ui';
+import {useMCPServer} from '@libs/mcp/useMCPServer';
 
 interface Props {
   onConnectionSuccess?: () => void;
@@ -162,10 +163,12 @@ export const SettingsScreen = observer(function SettingsScreen({
   };
 
   return (
-    <View style={styles.container}>
-      {/* MCP Server Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>MCP SERVER</Text>
+    <Screen padded={false}>
+      <NavigationHeader title="Settings" showBack={false} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* MCP Server Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>MCP SERVER</Text>
         <View style={styles.card}>
           <View style={styles.cardRow}>
             <View style={styles.cardRowContent}>
@@ -207,13 +210,10 @@ export const SettingsScreen = observer(function SettingsScreen({
         )}
       </View>
 
-      {/* App Store Connect Section */}
-      <Text style={styles.title}>App Store Connect</Text>
-      <Text style={styles.subtitle}>
-        Configure your API credentials to connect
-      </Text>
-
-      <View style={styles.form}>
+        {/* App Store Connect Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>APP STORE CONNECT</Text>
+          <View style={styles.form}>
         <View style={styles.field}>
           <Text style={styles.label}>API Key ID</Text>
           <TextInput
@@ -295,17 +295,20 @@ export const SettingsScreen = observer(function SettingsScreen({
               </Pressable>
             </>
           )}
+          </View>
+          </View>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </Screen>
   );
 });
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    padding: spacing.xxl,
-    backgroundColor: colors.content,
+  },
+  scrollContent: {
+    padding: spacing.xl,
   },
   section: {
     marginBottom: spacing.xxl,
@@ -365,16 +368,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'right',
     width: 80,
-  },
-  title: {
-    ...typography.title,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginBottom: spacing.xxl,
   },
   form: {
     maxWidth: 480,
