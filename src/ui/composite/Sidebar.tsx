@@ -4,10 +4,17 @@
 
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
-import {colors, spacing, layout} from '../../theme';
+import {colors, spacing, layout, typography} from '../../theme';
 import {AppSelector, App} from './AppSelector';
 import {MenuItem} from './MenuItem';
-import {PricingIcon, SettingsIcon, SubscriptionIcon} from '../primitives';
+import {Text} from '../primitives';
+import {
+  PricingIcon,
+  SettingsIcon,
+  SubscriptionIcon,
+  AppInfoIcon,
+  LocaleIcon,
+} from '../primitives';
 import type {SidebarSection} from '../../app/navigation';
 
 interface SidebarProps {
@@ -19,6 +26,15 @@ interface SidebarProps {
   showSettings?: boolean;
   isLoadingApps?: boolean;
 }
+
+const SectionHeader: React.FC<{title: string; first?: boolean}> = ({
+  title,
+  first,
+}) => (
+  <View style={[styles.sectionHeader, !first && styles.sectionHeaderSpacing]}>
+    <Text style={styles.sectionHeaderText}>{title}</Text>
+  </View>
+);
 
 export const Sidebar: React.FC<SidebarProps> = ({
   apps,
@@ -39,6 +55,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       />
 
       <View style={styles.menu}>
+        <SectionHeader title="General" first />
+        <MenuItem
+          label="App Info"
+          icon={<AppInfoIcon selected={selectedMenuItem === 'app-info'} />}
+          selected={selectedMenuItem === 'app-info'}
+          onPress={() => onSelectMenuItem('app-info')}
+        />
+        <MenuItem
+          label="App Settings"
+          icon={<LocaleIcon selected={selectedMenuItem === 'app-settings'} />}
+          selected={selectedMenuItem === 'app-settings'}
+          onPress={() => onSelectMenuItem('app-settings')}
+        />
+
+        <SectionHeader title="Monetization" />
         <MenuItem
           label="Pricing"
           icon={<PricingIcon selected={selectedMenuItem === 'pricing'} />}
@@ -83,8 +114,22 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 0},
   },
   menu: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingHorizontal: spacing.sm,
+  },
+  sectionHeader: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
+  },
+  sectionHeaderText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    letterSpacing: 0.3,
+  },
+  sectionHeaderSpacing: {
+    marginTop: spacing.xl,
   },
   spacer: {
     flex: 1,
@@ -92,5 +137,8 @@ const styles = StyleSheet.create({
   bottomMenu: {
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.sidebarBorder,
+    paddingTop: spacing.sm,
   },
 });
