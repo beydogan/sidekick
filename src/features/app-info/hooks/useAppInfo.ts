@@ -138,3 +138,21 @@ export function useUpdateAppInfo() {
     },
   });
 }
+
+export function useDeleteAppInfoLocalization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      localizationId,
+    }: {
+      localizationId: string;
+      appId: string;
+    }) => appInfo.deleteAppInfoLocalization(localizationId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: appInfoKeys.infos(variables.appId),
+      });
+    },
+  });
+}

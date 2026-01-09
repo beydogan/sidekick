@@ -173,7 +173,8 @@ export interface AppInfo {
       data: {type: 'appCategories'; id: string} | null;
     };
     appInfoLocalizations?: {
-      links: {related: string};
+      links?: {related: string};
+      data?: Array<{type: 'appInfoLocalizations'; id: string}>;
     };
   };
 }

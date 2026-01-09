@@ -1,4 +1,4 @@
-import {get, patch} from '../client';
+import {get, patch, del} from '../client';
 import type {
   AppInfo,
   AppInfoLocalization,
@@ -16,6 +16,7 @@ export async function getAppInfos(
     'fields[appInfoLocalizations]':
       'locale,name,subtitle,privacyPolicyUrl,privacyChoicesUrl,privacyPolicyText',
     'fields[appCategories]': 'platforms',
+    'limit[appInfoLocalizations]': '50',
   });
 }
 
@@ -123,4 +124,10 @@ export async function updateAppInfo(
   }
 
   return patch<APIResponse<AppInfo>>(`/appInfos/${appInfoId}`, {data});
+}
+
+export async function deleteAppInfoLocalization(
+  localizationId: string,
+): Promise<void> {
+  return del<void>(`/appInfoLocalizations/${localizationId}`);
 }

@@ -20,17 +20,12 @@ configureObservablePersistence({
   },
 });
 
-interface AppSettings {
-  locales: string[];
-}
-
 interface UIState {
   selectedAppId: string | null;
   mcpServer: {
     enabled: boolean;
     port: number;
   };
-  appSettings: Record<string, AppSettings>;
 }
 
 export const ui$ = observable<UIState>({
@@ -39,7 +34,6 @@ export const ui$ = observable<UIState>({
     enabled: false,
     port: 3000,
   },
-  appSettings: {},
 });
 
 // Persist the UI state
