@@ -446,12 +446,14 @@ export function SubscriptionPricingScreen() {
     return map;
   }, [currentPricesData]);
 
-  // Set initial base price from USA
+  // Set base price from USA when data loads
+  const [hasInitializedFromAPI, setHasInitializedFromAPI] = useState(false);
   useEffect(() => {
-    if (currentPrices['USA'] && !basePriceUSD) {
+    if (currentPrices['USA'] && !hasInitializedFromAPI) {
       setBasePriceUSD(currentPrices['USA'].localPrice);
+      setHasInitializedFromAPI(true);
     }
-  }, [currentPrices, basePriceUSD]);
+  }, [currentPrices, hasInitializedFromAPI]);
 
   // Callback to update territory status
   const handleProgress = useCallback((territoryCode: string, status: TerritoryStatus) => {
