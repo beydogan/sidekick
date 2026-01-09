@@ -1,6 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
+import {NativeModules} from 'react-native';
 import {MCPServerHandler} from './server';
 import {ascTools} from './tools/asc';
+
+const {MCPServer: NativeMCPServer} = NativeModules;
 
 interface MCPServerConfig {
   port?: number;
@@ -23,25 +26,44 @@ export function useMCPServer(config: MCPServerConfig = {}) {
   });
 
   useEffect(() => {
-    const server = new MCPServerHandler({
-      name: 'sidekick',
-      version: '1.0.0',
-      port,
-    });
+    let mounted = true;
 
-    for (const {definition, handler} of ascTools) {
-      server.registerTool(definition, handler);
-    }
+    const initServer = async () => {
+      // Stop any orphaned server from previous hot reload
+      try {
+        await NativeMCPServer.stop();
+      } catch {
+        // Ignore - server may not be running
+      }
 
-    serverRef.current = server;
-    setState(prev => ({...prev, port}));
+      // Give native server time to fully release the port
+      await new Promise<void>(resolve => setTimeout(resolve, 100));
 
-    if (autoStart) {
-      startServer();
-    }
+      if (!mounted) return;
+
+      const server = new MCPServerHandler({
+        name: 'sidekick',
+        version: '1.0.0',
+        port,
+      });
+
+      for (const {definition, handler} of ascTools) {
+        server.registerTool(definition, handler);
+      }
+
+      serverRef.current = server;
+      setState(prev => ({...prev, port}));
+
+      if (autoStart) {
+        startServer();
+      }
+    };
+
+    initServer();
 
     return () => {
-      server.stop();
+      mounted = false;
+      serverRef.current?.stop();
     };
   }, [port]);
 

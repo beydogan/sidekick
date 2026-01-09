@@ -1,4 +1,4 @@
-import {apps, subscriptions} from '@libs/appStoreConnect';
+import {apps, subscriptions, loadCredentials, generateToken} from '@libs/appStoreConnect';
 import type {ToolDefinition, ToolHandler} from '../types';
 
 // Tool definitions
@@ -71,6 +71,15 @@ export const getSubscriptionPricesDefinition: ToolDefinition = {
   },
 };
 
+export const getTokenDefinition: ToolDefinition = {
+  name: 'get_token',
+  description: 'Get a valid JWT token for App Store Connect API. Use this to make your own API requests to https://api.appstoreconnect.apple.com/v1/. Token is valid for 20 minutes.',
+  inputSchema: {
+    type: 'object',
+    properties: {},
+  },
+};
+
 // Tool handlers
 export const listAppsHandler: ToolHandler = async () => {
   const response = await apps.listApps();
@@ -124,6 +133,19 @@ export const getSubscriptionPricesHandler: ToolHandler = async (params) => {
   }));
 };
 
+export const getTokenHandler: ToolHandler = async () => {
+  const credentials = await loadCredentials();
+  if (!credentials) {
+    throw new Error('No credentials configured. Please set up App Store Connect credentials first.');
+  }
+  const token = generateToken(credentials);
+  return {
+    token,
+    baseUrl: 'https://api.appstoreconnect.apple.com/v1',
+    usage: 'Include as Authorization: Bearer <token> header',
+  };
+};
+
 // Export all tools as array for easy registration
 export const ascTools = [
   {definition: listAppsDefinition, handler: listAppsHandler},
@@ -131,4 +153,5 @@ export const ascTools = [
   {definition: listSubscriptionGroupsDefinition, handler: listSubscriptionGroupsHandler},
   {definition: listSubscriptionsDefinition, handler: listSubscriptionsHandler},
   {definition: getSubscriptionPricesDefinition, handler: getSubscriptionPricesHandler},
+  {definition: getTokenDefinition, handler: getTokenHandler},
 ];
