@@ -1,23 +1,19 @@
 /**
  * CreateSubscriptionScreen - Create a new subscription with subscription group
+ * Apple macOS-style grouped form layout
  */
 
 import React, {useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  Switch,
-} from 'react-native';
+import {View, StyleSheet, Switch, ScrollView, ActivityIndicator} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
-import {Screen, Text, Pressable, NavigationHeader} from '@ui';
-import {colors, spacing, radii, typography} from '@theme';
+import {Screen, Text, TextInput, NavigationHeader, SegmentedControl, Pressable} from '@ui';
+import {colors, spacing, radii} from '@theme';
 import {
+  useSubscriptionGroups,
   useCreateSubscriptionGroup,
   useCreateSubscription,
-} from '@features/subscriptions/hooks/useSubscriptions';
+} from '../hooks/useSubscriptions';
 import type {SubscriptionsStackParamList} from '@app/navigation/types';
 import type {Subscription} from '@libs/appStoreConnect';
 
@@ -29,12 +25,12 @@ type NavigationProp = StackNavigationProp<
 type SubscriptionPeriod = Subscription['attributes']['subscriptionPeriod'];
 
 const BILLING_PERIODS: {value: SubscriptionPeriod; label: string}[] = [
-  {value: 'ONE_WEEK', label: 'Weekly'},
-  {value: 'ONE_MONTH', label: 'Monthly'},
-  {value: 'TWO_MONTHS', label: '2 Months'},
-  {value: 'THREE_MONTHS', label: '3 Months'},
-  {value: 'SIX_MONTHS', label: '6 Months'},
-  {value: 'ONE_YEAR', label: 'Yearly'},
+  {value: 'ONE_WEEK', label: 'Week'},
+  {value: 'ONE_MONTH', label: 'Month'},
+  {value: 'TWO_MONTHS', label: '2 Mo'},
+  {value: 'THREE_MONTHS', label: '3 Mo'},
+  {value: 'SIX_MONTHS', label: '6 Mo'},
+  {value: 'ONE_YEAR', label: 'Year'},
 ];
 
 interface CreateSubscriptionScreenProps {
@@ -42,19 +38,28 @@ interface CreateSubscriptionScreenProps {
   appName?: string;
 }
 
+const CREATE_NEW_GROUP = '__create_new__';
+
 export function CreateSubscriptionScreen({
   appId,
   appName,
 }: CreateSubscriptionScreenProps) {
   const navigation = useNavigation<NavigationProp>();
 
+  // Fetch existing groups
+  const {data: groupsData, isLoading: isLoadingGroups} = useSubscriptionGroups(appId);
+  const existingGroups = groupsData?.data ?? [];
+
   // Form state
-  const [groupName, setGroupName] = useState('');
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(CREATE_NEW_GROUP);
+  const [newGroupName, setNewGroupName] = useState('');
   const [subscriptionName, setSubscriptionName] = useState('');
   const [productId, setProductId] = useState('');
-  const [billingPeriod, setBillingPeriod] = useState<SubscriptionPeriod>('ONE_MONTH');
+  const [billingPeriod, setBillingPeriod] =
+    useState<SubscriptionPeriod>('ONE_MONTH');
   const [familySharable, setFamilySharable] = useState(false);
-  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+
+  const isCreatingNewGroup = selectedGroupId === CREATE_NEW_GROUP;
 
   // Mutations
   const createGroup = useCreateSubscriptionGroup();
@@ -64,7 +69,7 @@ export function CreateSubscriptionScreen({
   const error = createGroup.error || createSubscription.error;
 
   const isFormValid =
-    groupName.trim().length > 0 &&
+    (isCreatingNewGroup ? newGroupName.trim().length > 0 : selectedGroupId !== '') &&
     subscriptionName.trim().length > 0 &&
     productId.trim().length > 0;
 
@@ -72,17 +77,26 @@ export function CreateSubscriptionScreen({
     if (!isFormValid || isLoading) return;
 
     try {
-      // First create the subscription group
-      const groupResult = await createGroup.mutateAsync({
-        appId,
-        request: {referenceName: groupName.trim()},
-      });
+      let groupId: string;
+      let groupName: string;
 
-      const newGroupId = groupResult.data.id;
+      if (isCreatingNewGroup) {
+        // Create new subscription group
+        const groupResult = await createGroup.mutateAsync({
+          appId,
+          request: {referenceName: newGroupName.trim()},
+        });
+        groupId = groupResult.data.id;
+        groupName = newGroupName.trim();
+      } else {
+        // Use existing group
+        groupId = selectedGroupId;
+        groupName = existingGroups.find(g => g.id === selectedGroupId)?.attributes.referenceName ?? '';
+      }
 
-      // Then create the subscription in that group
+      // Create the subscription in the group
       await createSubscription.mutateAsync({
-        groupId: newGroupId,
+        groupId,
         request: {
           name: subscriptionName.trim(),
           productId: productId.trim(),
@@ -91,268 +105,306 @@ export function CreateSubscriptionScreen({
         },
       });
 
-      // Navigate to the subscription list for the new group
+      // Navigate to the subscription list
       navigation.replace('SubscriptionList', {
-        groupId: newGroupId,
-        groupName: groupName.trim(),
+        groupId,
+        groupName,
       });
     } catch {
       // Error is handled by the mutation state
     }
   };
 
-  const selectedPeriodLabel =
-    BILLING_PERIODS.find(p => p.value === billingPeriod)?.label ?? 'Select';
-
   return (
     <Screen padded={false}>
-      <NavigationHeader title="Create Subscription" showBack />
-      <View style={styles.content}>
-        {appName && (
-          <Text
-            variant="body"
-            color={colors.textSecondary}
-            style={styles.subtitle}>
-            Create a new subscription for {appName}
-          </Text>
-        )}
-
-        <View style={styles.form}>
-          {/* Group Name */}
-          <View style={styles.field}>
-            <Text variant="bodyMedium" style={styles.label}>
-              Group Name
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={groupName}
-              onChangeText={setGroupName}
-              placeholder="e.g., Premium Features"
-              placeholderTextColor={colors.textTertiary}
-              editable={!isLoading}
-            />
-            <Text variant="caption" color={colors.textTertiary} style={styles.hint}>
-              Internal reference name for the subscription group
-            </Text>
-          </View>
-
-          {/* Subscription Name */}
-          <View style={styles.field}>
-            <Text variant="bodyMedium" style={styles.label}>
-              Subscription Name
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={subscriptionName}
-              onChangeText={setSubscriptionName}
-              placeholder="e.g., Monthly Premium"
-              placeholderTextColor={colors.textTertiary}
-              editable={!isLoading}
-            />
-            <Text variant="caption" color={colors.textTertiary} style={styles.hint}>
-              Display name shown to users
-            </Text>
-          </View>
-
-          {/* Product ID */}
-          <View style={styles.field}>
-            <Text variant="bodyMedium" style={styles.label}>
-              Product ID
-            </Text>
-            <TextInput
-              style={[styles.input, styles.monoInput]}
-              value={productId}
-              onChangeText={setProductId}
-              placeholder="com.yourapp.subscription.monthly"
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
-            <Text variant="caption" color={colors.textTertiary} style={styles.hint}>
-              Unique identifier for StoreKit
-            </Text>
-          </View>
-
-          {/* Billing Period */}
-          <View style={styles.field}>
-            <Text variant="bodyMedium" style={styles.label}>
-              Billing Period
-            </Text>
-            <Pressable
-              style={styles.picker}
-              onPress={() => setShowPeriodPicker(!showPeriodPicker)}
-              disabled={isLoading}>
-              <Text variant="body">{selectedPeriodLabel}</Text>
-              <Text style={styles.chevron}>{showPeriodPicker ? '▲' : '▼'}</Text>
-            </Pressable>
-            {showPeriodPicker && (
-              <View style={styles.pickerDropdown}>
-                {BILLING_PERIODS.map(period => (
-                  <Pressable
-                    key={period.value}
-                    style={[
-                      styles.pickerOption,
-                      billingPeriod === period.value && styles.pickerOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setBillingPeriod(period.value);
-                      setShowPeriodPicker(false);
-                    }}>
-                    <Text
-                      variant="body"
-                      color={
-                        billingPeriod === period.value
-                          ? colors.primary
-                          : colors.textPrimary
-                      }>
-                      {period.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Family Sharing */}
-          <View style={styles.switchField}>
-            <View style={styles.switchLabel}>
-              <Text variant="bodyMedium">Family Sharing</Text>
-              <Text variant="caption" color={colors.textTertiary}>
-                Allow family members to share this subscription
-              </Text>
-            </View>
-            <Switch
-              value={familySharable}
-              onValueChange={setFamilySharable}
-              disabled={isLoading}
-              trackColor={{false: colors.border, true: colors.primary}}
-            />
-          </View>
-        </View>
-
-        {/* Error Message */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text variant="body" color={colors.error}>
-              {error instanceof Error ? error.message : 'Failed to create subscription'}
-            </Text>
-          </View>
-        )}
-
-        {/* Submit Button */}
-        <Pressable
-          style={[
-            styles.submitButton,
-            (!isFormValid || isLoading) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={!isFormValid || isLoading}>
-          {isLoading ? (
-            <ActivityIndicator color={colors.content} size="small" />
-          ) : (
-            <Text variant="bodyMedium" color={colors.content}>
-              Create Subscription
+      <NavigationHeader
+        title="Create Subscription"
+        showBack
+        rightAction={{
+          label: 'Create',
+          onPress: handleSubmit,
+          disabled: !isFormValid,
+          loading: isLoading,
+        }}
+      />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
+          {appName && (
+            <Text
+              variant="body"
+              color={colors.textSecondary}
+              style={styles.subtitle}>
+              Creating subscription for {appName}
             </Text>
           )}
-        </Pressable>
-      </View>
+
+          {/* Error Message */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text variant="body" color={colors.error}>
+                {error instanceof Error
+                  ? error.message
+                  : 'Failed to create subscription'}
+              </Text>
+            </View>
+          )}
+
+          {/* Subscription Group Section */}
+          <View style={styles.section}>
+            <Text variant="caption" color={colors.textSecondary} style={styles.sectionHeader}>
+              SUBSCRIPTION GROUP
+            </Text>
+            <View style={styles.sectionCard}>
+              {isLoadingGroups ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                  <Text variant="body" color={colors.textSecondary}>
+                    Loading groups...
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Create New option */}
+                  <Pressable
+                    style={styles.radioRow}
+                    onPress={() => setSelectedGroupId(CREATE_NEW_GROUP)}
+                    disabled={isLoading}>
+                    <View style={[
+                      styles.radio,
+                      isCreatingNewGroup && styles.radioSelected,
+                    ]}>
+                      {isCreatingNewGroup && <View style={styles.radioInner} />}
+                    </View>
+                    <Text variant="body" color={colors.textPrimary}>
+                      Create New Group
+                    </Text>
+                  </Pressable>
+
+                  {/* New group name input */}
+                  {isCreatingNewGroup && (
+                    <View style={styles.nestedField}>
+                      <TextInput
+                        value={newGroupName}
+                        onChangeText={setNewGroupName}
+                        placeholder="e.g., Premium Features"
+                        editable={!isLoading}
+                      />
+                    </View>
+                  )}
+
+                  {/* Existing groups */}
+                  {existingGroups.map((group) => (
+                    <React.Fragment key={group.id}>
+                      <View style={styles.fieldDivider} />
+                      <Pressable
+                        style={styles.radioRow}
+                        onPress={() => setSelectedGroupId(group.id)}
+                        disabled={isLoading}>
+                        <View style={[
+                          styles.radio,
+                          selectedGroupId === group.id && styles.radioSelected,
+                        ]}>
+                          {selectedGroupId === group.id && <View style={styles.radioInner} />}
+                        </View>
+                        <Text variant="body" color={colors.textPrimary}>
+                          {group.attributes.referenceName}
+                        </Text>
+                      </Pressable>
+                    </React.Fragment>
+                  ))}
+                </>
+              )}
+            </View>
+            <Text variant="caption" color={colors.textTertiary} style={styles.sectionFooter}>
+              {isCreatingNewGroup
+                ? 'Internal name used to organize subscriptions. Not visible to users.'
+                : 'Add this subscription to an existing group.'}
+            </Text>
+          </View>
+
+          {/* Subscription Details Section */}
+          <View style={styles.section}>
+            <Text variant="caption" color={colors.textSecondary} style={styles.sectionHeader}>
+              SUBSCRIPTION DETAILS
+            </Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.field}>
+                <Text variant="body" color={colors.textSecondary}>
+                  Display Name
+                </Text>
+                <TextInput
+                  value={subscriptionName}
+                  onChangeText={setSubscriptionName}
+                  placeholder="e.g., Monthly Premium"
+                  editable={!isLoading}
+                />
+              </View>
+              <View style={styles.fieldDivider} />
+              <View style={styles.field}>
+                <Text variant="body" color={colors.textSecondary}>
+                  Product ID
+                </Text>
+                <TextInput
+                  mono
+                  value={productId}
+                  onChangeText={setProductId}
+                  placeholder="com.yourapp.subscription.monthly"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+            <Text variant="caption" color={colors.textTertiary} style={styles.sectionFooter}>
+              The Product ID must be unique and cannot be changed after creation.
+            </Text>
+          </View>
+
+          {/* Billing Section */}
+          <View style={styles.section}>
+            <Text variant="caption" color={colors.textSecondary} style={styles.sectionHeader}>
+              BILLING
+            </Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.fieldWithLabel}>
+                <Text variant="body" color={colors.textPrimary}>
+                  Renewal Period
+                </Text>
+                <SegmentedControl
+                  options={BILLING_PERIODS}
+                  value={billingPeriod}
+                  onChange={setBillingPeriod}
+                  disabled={isLoading}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Options Section */}
+          <View style={styles.section}>
+            <Text variant="caption" color={colors.textSecondary} style={styles.sectionHeader}>
+              OPTIONS
+            </Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.switchRow}>
+                <View style={styles.switchLabel}>
+                  <Text variant="body" color={colors.textPrimary}>
+                    Family Sharing
+                  </Text>
+                  <Text variant="caption" color={colors.textTertiary}>
+                    Allow up to 6 family members to share
+                  </Text>
+                </View>
+                <Switch
+                  value={familySharable}
+                  onValueChange={setFamilySharable}
+                  disabled={isLoading}
+                  trackColor={{false: colors.border, true: colors.primary}}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xxxl,
+  },
+  content: {
     padding: spacing.xxl,
-    maxWidth: 480,
+    maxWidth: 560,
+    gap: spacing.xl,
   },
   subtitle: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
-  form: {
-    gap: spacing.lg,
-  },
-  field: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.textPrimary,
-  },
-  input: {
-    backgroundColor: colors.sidebar,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
+  errorContainer: {
     padding: spacing.md,
-    ...typography.body,
-    color: colors.textPrimary,
+    backgroundColor: 'rgba(255, 59, 48, 0.08)',
+    borderRadius: radii.lg,
   },
-  monoInput: {
-    fontFamily: 'Menlo',
-    fontSize: 12,
+  section: {
+    gap: spacing.sm,
   },
-  hint: {
-    marginTop: spacing.xs,
+  sectionHeader: {
+    paddingHorizontal: spacing.md,
+    letterSpacing: 0.5,
   },
-  picker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.sidebar,
+  sectionCard: {
+    backgroundColor: colors.content,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing.md,
-  },
-  chevron: {
-    fontSize: 10,
-    color: colors.textTertiary,
-  },
-  pickerDropdown: {
-    backgroundColor: colors.dropdownBackground,
-    borderWidth: 1,
-    borderColor: colors.dropdownBorder,
-    borderRadius: radii.md,
-    marginTop: spacing.xs,
+    borderColor: colors.borderLight,
     overflow: 'hidden',
   },
-  pickerOption: {
+  sectionFooter: {
+    paddingHorizontal: spacing.md,
+  },
+  field: {
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  fieldWithLabel: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  fieldDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginHorizontal: spacing.md,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     padding: spacing.md,
   },
-  pickerOptionSelected: {
-    backgroundColor: colors.selection,
+  radioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
   },
-  switchField: {
+  radio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  nestedField: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    paddingLeft: spacing.md + 18 + spacing.sm,
+  },
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.sidebar,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
     padding: spacing.md,
   },
   switchLabel: {
     flex: 1,
-    gap: spacing.xs,
-  },
-  errorContainer: {
-    marginTop: spacing.lg,
-    padding: spacing.md,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    borderRadius: radii.md,
-  },
-  submitButton: {
-    marginTop: spacing.xl,
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-  },
-  submitButtonDisabled: {
-    opacity: 0.5,
+    gap: 2,
   },
 });
