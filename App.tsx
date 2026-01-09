@@ -43,7 +43,7 @@ function AppContent(): React.JSX.Element {
   const [appIcons, setAppIcons] = useState<Map<string, string>>(new Map());
   const selectedAppId = useSelector(ui$.selectedAppId);
   const [selectedMenuItem, setSelectedMenuItem] =
-    useState<SidebarSection>('pricing');
+    useState<SidebarSection>('app-info');
 
   // Start MCP server
   const {isRunning: mcpRunning, start: startMCP} = useMCPServer();
@@ -110,9 +110,9 @@ function AppContent(): React.JSX.Element {
   // Handle app selection
   const handleSelectApp = (app: UIApp) => {
     ui$.selectedAppId.set(app.id);
-    // Navigate to pricing when an app is selected
+    // Navigate to app-info when an app is selected
     if (selectedMenuItem === 'settings') {
-      setSelectedMenuItem('pricing');
+      setSelectedMenuItem('app-info');
     }
   };
 

@@ -21,5 +21,20 @@ export type SettingsStackParamList = {
   SettingsHome: {onConnectionSuccess?: () => void} | undefined;
 };
 
+// App Info stack routes
+export type AppInfoStackParamList = {
+  AppInfoHome: {appId: string; appName: string};
+};
+
+// App Settings stack routes
+export type AppSettingsStackParamList = {
+  AppSettingsHome: {appId: string; appName: string};
+};
+
 // Sidebar section identifiers
-export type SidebarSection = 'pricing' | 'subscriptions' | 'settings';
+export type SidebarSection =
+  | 'app-info'
+  | 'app-settings'
+  | 'pricing'
+  | 'subscriptions'
+  | 'settings';

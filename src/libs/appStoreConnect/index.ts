@@ -27,16 +27,23 @@ export {generateToken, clearTokenCache} from './jwt';
 import * as appsEndpoints from './endpoints/apps';
 import * as pricingEndpoints from './endpoints/pricing';
 import * as subscriptionsEndpoints from './endpoints/subscriptions';
+import * as appInfoEndpoints from './endpoints/appInfo';
 
 export const apps = appsEndpoints;
 export const pricing = pricingEndpoints;
 export const subscriptions = subscriptionsEndpoints;
+export const appInfo = appInfoEndpoints;
 
 // Types
 export type {
   Credentials,
   CredentialsConfig,
   App,
+  AppInfo,
+  AppInfoLocalization,
+  AppCategory,
+  AppStoreState,
+  AppStoreAgeRating,
   AppPriceSchedule,
   AppPrice,
   AppPricePoint,

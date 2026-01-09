@@ -4,6 +4,6 @@
 
 export {Text} from './Text';
 export {TextInput} from './TextInput';
-export {PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, SubscriptionIcon} from './Icon';
+export {PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, SubscriptionIcon, AppInfoIcon, LocaleIcon} from './Icon';
 export {Pressable} from './Pressable';
 export {SegmentedControl} from './SegmentedControl';

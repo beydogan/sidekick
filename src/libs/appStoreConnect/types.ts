@@ -60,6 +60,113 @@ export interface App {
         self: string;
       };
     };
+    appInfos?: {
+      links: {
+        related: string;
+        self: string;
+      };
+    };
+  };
+}
+
+// App Info types
+export type AppStoreState =
+  | 'ACCEPTED'
+  | 'DEVELOPER_REMOVED_FROM_SALE'
+  | 'DEVELOPER_REJECTED'
+  | 'IN_REVIEW'
+  | 'INVALID_BINARY'
+  | 'METADATA_REJECTED'
+  | 'PENDING_APPLE_RELEASE'
+  | 'PENDING_CONTRACT'
+  | 'PENDING_DEVELOPER_RELEASE'
+  | 'PREPARE_FOR_SUBMISSION'
+  | 'PREORDER_READY_FOR_SALE'
+  | 'PROCESSING_FOR_APP_STORE'
+  | 'READY_FOR_REVIEW'
+  | 'READY_FOR_SALE'
+  | 'REJECTED'
+  | 'REMOVED_FROM_SALE'
+  | 'WAITING_FOR_EXPORT_COMPLIANCE'
+  | 'WAITING_FOR_REVIEW'
+  | 'REPLACED_WITH_NEW_VERSION'
+  | 'NOT_APPLICABLE';
+
+export type AppStoreAgeRating =
+  | 'FOUR_PLUS'
+  | 'NINE_PLUS'
+  | 'TWELVE_PLUS'
+  | 'SEVENTEEN_PLUS'
+  | 'UNRATED';
+
+export type BrazilAgeRating =
+  | 'L'
+  | 'TEN'
+  | 'TWELVE'
+  | 'FOURTEEN'
+  | 'SIXTEEN'
+  | 'EIGHTEEN';
+
+export type KidsAgeBand = 'FIVE_AND_UNDER' | 'SIX_TO_EIGHT' | 'NINE_TO_ELEVEN';
+
+export interface AppInfo {
+  type: 'appInfos';
+  id: string;
+  attributes: {
+    appStoreState?: AppStoreState;
+    state?: string;
+    appStoreAgeRating?: AppStoreAgeRating;
+    brazilAgeRating?: BrazilAgeRating;
+    brazilAgeRatingV2?: BrazilAgeRating;
+    kidsAgeBand?: KidsAgeBand;
+  };
+  relationships?: {
+    app?: {
+      data: {type: 'apps'; id: string};
+    };
+    primaryCategory?: {
+      data: {type: 'appCategories'; id: string} | null;
+    };
+    secondaryCategory?: {
+      data: {type: 'appCategories'; id: string} | null;
+    };
+    appInfoLocalizations?: {
+      links: {related: string};
+    };
+  };
+}
+
+export interface AppInfoLocalization {
+  type: 'appInfoLocalizations';
+  id: string;
+  attributes: {
+    locale: string;
+    name?: string;
+    subtitle?: string;
+    privacyPolicyUrl?: string;
+    privacyChoicesUrl?: string;
+    privacyPolicyText?: string;
+  };
+  relationships?: {
+    appInfo?: {
+      data: {type: 'appInfos'; id: string};
+    };
+  };
+}
+
+export interface AppCategory {
+  type: 'appCategories';
+  id: string;
+  attributes: {
+    platforms: string[];
+  };
+  relationships?: {
+    subcategories?: {
+      links: {related: string};
+    };
+    parent?: {
+      data: {type: 'appCategories'; id: string} | null;
+    };
   };
 }
 

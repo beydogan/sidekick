@@ -11,7 +11,13 @@ import {
   NavigationContainer,
   NavigationIndependentTree,
 } from '@react-navigation/native';
-import {PricingStack, SubscriptionsStack, SettingsStack} from './stacks';
+import {
+  PricingStack,
+  SubscriptionsStack,
+  SettingsStack,
+  AppInfoStack,
+  AppSettingsStack,
+} from './stacks';
 import type {SidebarSection} from './types';
 
 interface SectionNavigatorProps {
@@ -32,6 +38,38 @@ export function SectionNavigator({
 
   return (
     <View style={styles.container}>
+      {/* App Info Stack - key forces remount when app changes */}
+      {hasApp && (
+        <View
+          key={`app-info-${appId}`}
+          style={[
+            styles.stack,
+            activeSection === 'app-info' ? styles.visible : styles.hidden,
+          ]}>
+          <NavigationIndependentTree>
+            <NavigationContainer>
+              <AppInfoStack appId={appId} appName={appName} />
+            </NavigationContainer>
+          </NavigationIndependentTree>
+        </View>
+      )}
+
+      {/* App Settings Stack - key forces remount when app changes */}
+      {hasApp && (
+        <View
+          key={`app-settings-${appId}`}
+          style={[
+            styles.stack,
+            activeSection === 'app-settings' ? styles.visible : styles.hidden,
+          ]}>
+          <NavigationIndependentTree>
+            <NavigationContainer>
+              <AppSettingsStack appId={appId} appName={appName} />
+            </NavigationContainer>
+          </NavigationIndependentTree>
+        </View>
+      )}
+
       {/* Pricing Stack - key forces remount when app changes */}
       {hasApp && (
         <View
