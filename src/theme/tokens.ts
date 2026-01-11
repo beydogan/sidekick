@@ -98,6 +98,8 @@ export const typography = {
 
 export const layout = {
   sidebarWidth: 240,
+  aiSidebarWidth: 320,
+  globalHeaderHeight: 36,
   sidebarPadding: 12,
   menuItemHeight: 32,
   contentPadding: 24,

@@ -2,11 +2,11 @@
  * Sidekick - App Store Connect Management Tool
  */
 
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useSelector} from '@legendapp/state/react';
 import {Providers} from './src/app';
-import {Sidebar, ErrorBoundary} from './src/ui';
+import {Sidebar, ErrorBoundary, GlobalHeader} from './src/ui';
 import {SectionNavigator} from './src/app/navigation';
 import type {SidebarSection} from './src/app/navigation';
 import {useApps} from './src/features/pricing/hooks/usePricing';
@@ -18,6 +18,7 @@ import type {App as UIApp} from './src/ui/composite/AppSelector';
 import type {App as APIApp, AppStoreVersion} from './src/libs/appStoreConnect';
 import {useMCPServer} from './src/libs/mcp';
 import {fetchAppIcons} from './src/libs/itunes';
+import {AIAssistantSidebar} from './src/features/ai-assistant';
 
 // Determine which section to show based on credentials and menu selection
 function getActiveSection(
@@ -43,8 +44,13 @@ function AppContent(): React.JSX.Element {
   );
   const [appIcons, setAppIcons] = useState<Map<string, string>>(new Map());
   const selectedAppId = useSelector(ui$.selectedAppId);
+  const aiAssistantVisible = useSelector(ui$.aiAssistant.visible);
   const [selectedMenuItem, setSelectedMenuItem] =
     useState<SidebarSection>('app-info');
+
+  const handleToggleAI = useCallback(() => {
+    ui$.aiAssistant.visible.set(!ui$.aiAssistant.visible.get());
+  }, []);
 
   // Start MCP server
   const {isRunning: mcpRunning, start: startMCP} = useMCPServer();
@@ -133,27 +139,31 @@ function AppContent(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Sidebar
-        apps={apps}
-        selectedApp={selectedApp}
-        onSelectApp={handleSelectApp}
-        versions={versions}
-        isLoadingVersions={versionsLoading}
-        onSelectVersion={version => {
-          console.log('Selected version:', version.attributes.versionString);
-        }}
-        selectedMenuItem={selectedMenuItem}
-        onSelectMenuItem={setSelectedMenuItem}
-        showSettings
-        isLoadingApps={appsLoading}
-      />
-      <View style={styles.content}>
-        <SectionNavigator
-          activeSection={activeSection}
-          appId={selectedApp?.id}
-          appName={selectedApp?.name}
-          onConnectionSuccess={handleConnectionSuccess}
+      <GlobalHeader aiVisible={aiAssistantVisible} onToggleAI={handleToggleAI} />
+      <View style={styles.main}>
+        <Sidebar
+          apps={apps}
+          selectedApp={selectedApp}
+          onSelectApp={handleSelectApp}
+          versions={versions}
+          isLoadingVersions={versionsLoading}
+          onSelectVersion={version => {
+            console.log('Selected version:', version.attributes.versionString);
+          }}
+          selectedMenuItem={selectedMenuItem}
+          onSelectMenuItem={setSelectedMenuItem}
+          showSettings
+          isLoadingApps={appsLoading}
         />
+        <View style={styles.content}>
+          <SectionNavigator
+            activeSection={activeSection}
+            appId={selectedApp?.id}
+            appName={selectedApp?.name}
+            onConnectionSuccess={handleConnectionSuccess}
+          />
+        </View>
+        {aiAssistantVisible && <AIAssistantSidebar />}
       </View>
     </View>
   );
@@ -172,13 +182,17 @@ function Application(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     backgroundColor: colors.content,
     // Explicitly disable shadows to prevent RN macOS bug with NULL CGColor
     shadowColor: '#000',
     shadowOpacity: 0,
     shadowRadius: 0,
     shadowOffset: {width: 0, height: 0},
+  },
+  main: {
+    flex: 1,
+    flexDirection: 'row',
   },
   content: {
     flex: 1,

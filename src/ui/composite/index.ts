@@ -10,3 +10,4 @@ export {NavigationHeader} from './NavigationHeader';
 export {RightSidebar} from './RightSidebar';
 export {VersionsList} from './VersionsList';
 export type {VersionsListProps} from './VersionsList';
+export {GlobalHeader} from './GlobalHeader';

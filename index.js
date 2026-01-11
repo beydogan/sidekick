@@ -2,6 +2,13 @@
  * @format
  */
 
+// Polyfills for Vercel AI SDK
+import {ReadableStream, TransformStream, WritableStream} from 'web-streams-polyfill';
+globalThis.ReadableStream = globalThis.ReadableStream || ReadableStream;
+globalThis.TransformStream = globalThis.TransformStream || TransformStream;
+globalThis.WritableStream = globalThis.WritableStream || WritableStream;
+globalThis.structuredClone = globalThis.structuredClone || ((obj) => JSON.parse(JSON.stringify(obj)));
+
 import {LogBox} from 'react-native';
 
 // Disable LogBox modals (they break on macOS)
