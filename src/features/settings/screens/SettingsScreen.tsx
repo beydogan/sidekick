@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {observer} from '@legendapp/state/react';
-import {Screen, NavigationHeader, Pressable, TextInput as StyledTextInput} from '@ui';
+import {Screen, NavigationHeader, Pressable, TextInput as StyledTextInput, Dropdown} from '@ui';
 import {colors, spacing, typography, radii} from '@theme';
 import {
   savePrivateKey,
@@ -19,8 +19,9 @@ import {
   clearCredentials,
 } from '@libs/appStoreConnect';
 import type {CredentialsConfig} from '@libs/appStoreConnect';
-import {ui$} from '@stores/ui';
+import {ui$, AI_PROVIDERS, type AIProvider} from '@stores/ui';
 import {useMCPServer} from '@libs/mcp/useMCPServer';
+import {saveAICredentials, loadAICredentials, clearAICredentials} from '@libs/ai';
 
 interface Props {
   onConnectionSuccess?: () => void;
@@ -40,6 +41,12 @@ export const SettingsScreen = observer(function SettingsScreen({
   const mcpEnabled = ui$.mcpServer.enabled.get();
   const mcpPort = ui$.mcpServer.port.get();
   const mcp = useMCPServer({port: mcpPort});
+
+  // AI Assistant state
+  const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [aiConfigured, setAiConfigured] = useState(false);
 
   // Clear error when user types
   const handleApiKeyChange = (text: string) => {
@@ -67,6 +74,7 @@ export const SettingsScreen = observer(function SettingsScreen({
 
   useEffect(() => {
     loadExistingConfig();
+    loadExistingAIConfig();
   }, []);
 
   async function loadExistingConfig() {
@@ -162,6 +170,39 @@ export const SettingsScreen = observer(function SettingsScreen({
     }
   };
 
+  async function loadExistingAIConfig() {
+    const credentials = await loadAICredentials();
+    if (credentials) {
+      setAiProvider(credentials.provider);
+      setAiConfigured(true);
+      ui$.aiAssistant.provider.set(credentials.provider);
+    }
+  }
+
+  async function handleSaveAI() {
+    if (!aiApiKey) {
+      return;
+    }
+    setAiStatus('loading');
+    try {
+      await saveAICredentials({provider: aiProvider, apiKey: aiApiKey});
+      ui$.aiAssistant.provider.set(aiProvider);
+      setAiConfigured(true);
+      setAiStatus('success');
+      setAiApiKey('');
+    } catch {
+      setAiStatus('idle');
+    }
+  }
+
+  async function handleClearAI() {
+    await clearAICredentials();
+    ui$.aiAssistant.provider.set(null);
+    setAiConfigured(false);
+    setAiApiKey('');
+    setAiStatus('idle');
+  }
+
   return (
     <Screen padded={false}>
       <NavigationHeader title="Settings" showBack={false} />
@@ -209,6 +250,69 @@ export const SettingsScreen = observer(function SettingsScreen({
           </Text>
         )}
       </View>
+
+        {/* AI Assistant Section */}
+        <View style={[styles.section, {zIndex: 100}]}>
+          <Text style={styles.sectionHeader}>AI ASSISTANT</Text>
+          <View style={[styles.card, {zIndex: 100}]}>
+            <View style={[styles.cardRow, {zIndex: 10}]}>
+              <View style={styles.cardRowContent}>
+                <Text style={styles.cardLabel}>Provider</Text>
+              </View>
+              <Dropdown
+                options={AI_PROVIDERS.map(p => ({value: p.id, label: p.label}))}
+                value={aiProvider}
+                onChange={setAiProvider}
+                disabled={aiConfigured}
+              />
+            </View>
+            <View style={[styles.cardDivider, {zIndex: 1}]} />
+            <View style={[styles.cardRow, {zIndex: 1}]}>
+              <View style={styles.cardRowContent}>
+                <Text style={styles.cardLabel}>API Key</Text>
+                {aiConfigured && (
+                  <Text style={styles.cardHint}>Key saved securely</Text>
+                )}
+              </View>
+              {!aiConfigured && (
+                <StyledTextInput
+                  style={styles.apiKeyInput}
+                  value={aiApiKey}
+                  onChangeText={setAiApiKey}
+                  placeholder="sk-..."
+                  placeholderTextColor={colors.textTertiary}
+                  secureTextEntry
+                  mono
+                />
+              )}
+            </View>
+          </View>
+          <View style={styles.aiActions}>
+            {!aiConfigured ? (
+              <Pressable
+                style={[styles.button, styles.primaryButton]}
+                onPress={handleSaveAI}
+                disabled={!aiApiKey || aiStatus === 'loading'}>
+                {aiStatus === 'loading' ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Save</Text>
+                )}
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[styles.button, styles.dangerButton]}
+                onPress={handleClearAI}>
+                <Text style={styles.dangerButtonText}>Clear Credentials</Text>
+              </Pressable>
+            )}
+          </View>
+          {aiStatus === 'success' && (
+            <Text style={styles.sectionFooter}>
+              API key saved for {AI_PROVIDERS.find(p => p.id === aiProvider)?.label}
+            </Text>
+          )}
+        </View>
 
         {/* App Store Connect Section */}
         <View style={styles.section}>
@@ -336,7 +440,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderLight,
     borderRadius: radii.xl,
-    overflow: 'hidden',
   },
   cardRow: {
     flexDirection: 'row',
@@ -368,6 +471,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'right',
     width: 80,
+  },
+  apiKeyInput: {
+    ...typography.body,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: 'right',
+  },
+  aiActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   form: {
     maxWidth: 480,

@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Info,
   Globe,
+  Check,
 } from 'lucide-react-native';
 import {colors} from '../../theme';
 
@@ -87,6 +88,13 @@ export const LocaleIcon: React.FC<IconProps & {selected?: boolean}> = ({
     color || (selected ? colors.iconSelected : colors.iconDefault);
 
   return <Globe size={size} color={iconColor} strokeWidth={2} />;
+};
+
+export const CheckIcon: React.FC<IconProps> = ({
+  size = 14,
+  color = colors.primary,
+}) => {
+  return <Check size={size} color={color} strokeWidth={2} />;
 };
 
 interface AppIconProps {

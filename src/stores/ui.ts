@@ -20,11 +20,23 @@ configureObservablePersistence({
   },
 });
 
+export type AIProvider = 'openai' | 'anthropic' | 'google';
+
+export const AI_PROVIDERS: {id: AIProvider; label: string}[] = [
+  {id: 'openai', label: 'OpenAI'},
+  {id: 'anthropic', label: 'Anthropic'},
+  {id: 'google', label: 'Google AI'},
+];
+
 interface UIState {
   selectedAppId: string | null;
   mcpServer: {
     enabled: boolean;
     port: number;
+  };
+  aiAssistant: {
+    visible: boolean;
+    provider: AIProvider | null;
   };
 }
 
@@ -33,6 +45,10 @@ export const ui$ = observable<UIState>({
   mcpServer: {
     enabled: false,
     port: 3000,
+  },
+  aiAssistant: {
+    visible: false,
+    provider: null,
   },
 });
 

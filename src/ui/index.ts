@@ -3,10 +3,10 @@
  */
 
 // Primitives
-export {Banner, Text, TextInput, PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, Pressable, SegmentedControl} from './primitives';
+export {Banner, Text, TextInput, PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, Pressable, SegmentedControl, Dropdown} from './primitives';
 
 // Composite
-export {MenuItem, AppSelector, Sidebar, NavigationHeader} from './composite';
+export {MenuItem, AppSelector, Sidebar, NavigationHeader, GlobalHeader} from './composite';
 export type {App} from './composite';
 
 // Layout
