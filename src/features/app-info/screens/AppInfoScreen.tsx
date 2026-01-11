@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import {View, StyleSheet, ActivityIndicator, ScrollView, Alert} from 'react-native';
-import {Screen, Text, TextInput, Pressable, NavigationHeader} from '@ui';
+import {Screen, Text, TextInput, Pressable, NavigationHeader, Banner} from '@ui';
 import {RightSidebar} from '@ui/composite';
 import {colors, spacing, radii, typography} from '@theme';
 import {
@@ -122,11 +122,18 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   const [loadingLocales, setLoadingLocales] = useState<Set<string>>(new Set());
 
   const app = appData?.data;
-  const appInfo = appInfoData?.infos?.find(
+
+  // Only PREPARE_FOR_SUBMISSION is editable - live versions cannot be modified
+  const editableAppInfo = appInfoData?.infos?.find(
     info => info.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION',
-  ) || appInfoData?.infos?.find(
+  );
+  // For display purposes, fall back to the live version
+  const displayAppInfo = editableAppInfo || appInfoData?.infos?.find(
     info => info.attributes.appStoreState === 'READY_FOR_SALE',
   ) || appInfoData?.infos?.[0];
+
+  const appInfo = displayAppInfo;
+  const isEditable = !!editableAppInfo;
   const allLocalizations = appInfoData?.localizations || [];
   // Filter localizations to only those belonging to the editable appInfo
   const localizations = useMemo(() => {
@@ -138,12 +145,14 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   const categories = categoriesData?.data || [];
 
   const localizedLocales = useMemo(() =>
-    [...new Set(localizations.map(l => l.attributes.locale))],
+    [...new Set(localizations.map(l => l.attributes.locale))]
+      .sort((a, b) => getLocaleName(a).localeCompare(getLocaleName(b))),
     [localizations]
   );
 
   const notLocalizedLocales = useMemo(() =>
-    ALL_LOCALES.filter(locale => !localizedLocales.includes(locale)),
+    ALL_LOCALES.filter(locale => !localizedLocales.includes(locale))
+      .sort((a, b) => getLocaleName(a).localeCompare(getLocaleName(b))),
     [localizedLocales]
   );
 
@@ -317,7 +326,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
     setHasCategoryChanges(false);
   };
 
-  const hasChanges = hasLocalizationChanges || hasCategoryChanges;
+  const hasChanges = isEditable && (hasLocalizationChanges || hasCategoryChanges);
   const isSaving = updateLocalization.isPending || updateAppInfo.isPending;
   const isLoading = appLoading || appInfoLoading;
   const primaryLocale = app?.attributes.primaryLocale;
@@ -334,7 +343,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
           selected: locale === selectedLocale,
           loading: loadingLocales.has(locale),
           onPress: () => setSelectedLocale(locale),
-          action: locale !== primaryLocale ? {
+          action: isEditable && locale !== primaryLocale ? {
             icon: '-' as const,
             onPress: () => handleDeleteLocalization(locale),
           } : undefined,
@@ -342,7 +351,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
       });
     }
 
-    if (notLocalizedLocales.length > 0) {
+    if (isEditable && notLocalizedLocales.length > 0) {
       sections.push({
         title: 'Not Localized',
         items: notLocalizedLocales.map(locale => ({
@@ -359,7 +368,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
     }
 
     return sections;
-  }, [localizedLocales, notLocalizedLocales, selectedLocale, primaryLocale, loadingLocales, handleAddLocalization, handleDeleteLocalization]);
+  }, [localizedLocales, notLocalizedLocales, selectedLocale, primaryLocale, loadingLocales, handleAddLocalization, handleDeleteLocalization, isEditable]);
 
   if (isLoading) {
     return (
@@ -389,6 +398,11 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
             : undefined
         }
       />
+      {!isEditable && (
+        <Banner variant="warning">
+          This app has no version in progress. Create a new version to edit app information.
+        </Banner>
+      )}
       <View style={styles.mainLayout}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
@@ -408,6 +422,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                     onChangeText={handleNameChange}
                     placeholder="App name"
                     placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
                   />
                 </View>
                 <View style={styles.divider} />
@@ -421,6 +436,7 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                     onChangeText={handleSubtitleChange}
                     placeholder="App subtitle"
                     placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
                   />
                 </View>
               </View>
@@ -463,7 +479,8 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                   <Text style={styles.label}>Category</Text>
                   <Pressable
                     style={styles.selectField}
-                    onPress={() => setShowPrimaryCategoryPicker(!showPrimaryCategoryPicker)}>
+                    onPress={() => isEditable && setShowPrimaryCategoryPicker(!showPrimaryCategoryPicker)}
+                    disabled={!isEditable}>
                     <Text style={styles.selectText}>
                       {selectedPrimaryCategory
                         ? getCategoryName(selectedPrimaryCategory)
@@ -502,7 +519,8 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                   <Text style={styles.label}>Secondary Category (Optional)</Text>
                   <Pressable
                     style={styles.selectField}
-                    onPress={() => setShowSecondaryCategoryPicker(!showSecondaryCategoryPicker)}>
+                    onPress={() => isEditable && setShowSecondaryCategoryPicker(!showSecondaryCategoryPicker)}
+                    disabled={!isEditable}>
                     <Text
                       style={[
                         styles.selectText,

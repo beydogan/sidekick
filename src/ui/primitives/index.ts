@@ -2,6 +2,7 @@
  * UI Primitives exports
  */
 
+export {Banner} from './Banner';
 export {Text} from './Text';
 export {TextInput} from './TextInput';
 export {PricingIcon, ChevronDownIcon, ChevronLeftIcon, AppIcon, SettingsIcon, SubscriptionIcon, AppInfoIcon, LocaleIcon} from './Icon';
