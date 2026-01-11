@@ -1,5 +1,10 @@
-import {get} from '../client';
-import type {AppStoreVersion, APIListResponse} from '../types';
+import {get, patch, post, del} from '../client';
+import type {
+  AppStoreVersion,
+  AppStoreVersionLocalization,
+  APIListResponse,
+  APIResponse,
+} from '../types';
 
 export async function listAppStoreVersions(
   appId: string,
@@ -9,4 +14,92 @@ export async function listAppStoreVersions(
       'versionString,platform,appVersionState,appStoreState,releaseType,createdDate',
     limit: '50',
   });
+}
+
+export async function getAppStoreVersionWithLocalizations(
+  appId: string,
+): Promise<APIListResponse<AppStoreVersion> & {included?: AppStoreVersionLocalization[]}> {
+  return get<APIListResponse<AppStoreVersion> & {included?: AppStoreVersionLocalization[]}>(
+    `/apps/${appId}/appStoreVersions`,
+    {
+      'fields[appStoreVersions]': 'versionString,platform,appVersionState,appStoreState,releaseType,createdDate',
+      'fields[appStoreVersionLocalizations]': 'locale,description,keywords,marketingUrl,promotionalText,supportUrl,whatsNew',
+      include: 'appStoreVersionLocalizations',
+      limit: '10',
+    },
+  );
+}
+
+export async function getVersionLocalizations(
+  versionId: string,
+): Promise<APIListResponse<AppStoreVersionLocalization>> {
+  return get<APIListResponse<AppStoreVersionLocalization>>(
+    `/appStoreVersions/${versionId}/appStoreVersionLocalizations`,
+    {
+      'fields[appStoreVersionLocalizations]': 'locale,description,keywords,marketingUrl,promotionalText,supportUrl,whatsNew',
+    },
+  );
+}
+
+export async function updateVersionLocalization(
+  localizationId: string,
+  attributes: {
+    description?: string;
+    keywords?: string;
+    marketingUrl?: string;
+    promotionalText?: string;
+    supportUrl?: string;
+    whatsNew?: string;
+  },
+): Promise<APIResponse<AppStoreVersionLocalization>> {
+  return patch<APIResponse<AppStoreVersionLocalization>>(
+    `/appStoreVersionLocalizations/${localizationId}`,
+    {
+      data: {
+        type: 'appStoreVersionLocalizations',
+        id: localizationId,
+        attributes,
+      },
+    },
+  );
+}
+
+export async function createVersionLocalization(
+  versionId: string,
+  locale: string,
+  attributes: {
+    description?: string;
+    keywords?: string;
+    marketingUrl?: string;
+    promotionalText?: string;
+    supportUrl?: string;
+    whatsNew?: string;
+  },
+): Promise<APIResponse<AppStoreVersionLocalization>> {
+  return post<APIResponse<AppStoreVersionLocalization>>(
+    '/appStoreVersionLocalizations',
+    {
+      data: {
+        type: 'appStoreVersionLocalizations',
+        attributes: {
+          locale,
+          ...attributes,
+        },
+        relationships: {
+          appStoreVersion: {
+            data: {
+              type: 'appStoreVersions',
+              id: versionId,
+            },
+          },
+        },
+      },
+    },
+  );
+}
+
+export async function deleteVersionLocalization(
+  localizationId: string,
+): Promise<void> {
+  return del<void>(`/appStoreVersionLocalizations/${localizationId}`);
 }

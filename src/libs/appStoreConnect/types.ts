@@ -213,6 +213,25 @@ export interface AppCategory {
   };
 }
 
+export interface AppStoreVersionLocalization {
+  type: 'appStoreVersionLocalizations';
+  id: string;
+  attributes: {
+    locale: string;
+    description?: string;
+    keywords?: string;
+    marketingUrl?: string;
+    promotionalText?: string;
+    supportUrl?: string;
+    whatsNew?: string;
+  };
+  relationships?: {
+    appStoreVersion?: {
+      data: {type: 'appStoreVersions'; id: string};
+    };
+  };
+}
+
 // Pricing types
 export interface AppPriceSchedule {
   type: 'appPriceSchedules';

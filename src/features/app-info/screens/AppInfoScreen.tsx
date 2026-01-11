@@ -11,6 +11,8 @@ import {
   useUpdateAppInfo,
   useCreateAppInfoLocalization,
   useDeleteAppInfoLocalization,
+  useAppStoreVersions,
+  useUpdateVersionLocalization,
 } from '../hooks/useAppInfo';
 
 // Locale codes must match exactly what ASC API returns
@@ -103,11 +105,13 @@ interface AppInfoScreenProps {
 export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   const {data: appData, isLoading: appLoading} = useApp(appId);
   const {data: appInfoData, isLoading: appInfoLoading} = useAppInfos(appId);
+  const {data: versionsData, isLoading: versionsLoading} = useAppStoreVersions(appId);
   const {data: categoriesData} = useAppCategories();
   const updateLocalization = useUpdateAppInfoLocalization();
   const updateAppInfo = useUpdateAppInfo();
   const createLocalization = useCreateAppInfoLocalization();
   const deleteLocalization = useDeleteAppInfoLocalization();
+  const updateVersionLocalization = useUpdateVersionLocalization();
 
   const [selectedLocale, setSelectedLocale] = useState<string | null>(null);
   const [showPrimaryCategoryPicker, setShowPrimaryCategoryPicker] = useState(false);
@@ -121,11 +125,21 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   const [categoriesInitialized, setCategoriesInitialized] = useState(false);
   const [loadingLocales, setLoadingLocales] = useState<Set<string>>(new Set());
 
+  // Version localization fields
+  const [promotionalText, setPromotionalText] = useState('');
+  const [description, setDescription] = useState('');
+  const [whatsNew, setWhatsNew] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [supportUrl, setSupportUrl] = useState('');
+  const [marketingUrl, setMarketingUrl] = useState('');
+  const [hasVersionChanges, setHasVersionChanges] = useState(false);
+
   const app = appData?.data;
 
-  // Only PREPARE_FOR_SUBMISSION is editable - live versions cannot be modified
+  // PREPARE_FOR_SUBMISSION and REJECTED are editable - live versions cannot be modified
   const editableAppInfo = appInfoData?.infos?.find(
-    info => info.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION',
+    info => info.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION' ||
+            info.attributes.appStoreState === 'REJECTED',
   );
   // For display purposes, fall back to the live version
   const displayAppInfo = editableAppInfo || appInfoData?.infos?.find(
@@ -135,6 +149,14 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
   const appInfo = displayAppInfo;
   const isEditable = !!editableAppInfo;
   const allLocalizations = appInfoData?.localizations || [];
+
+  // Find the editable version (PREPARE_FOR_SUBMISSION or REJECTED state)
+  const editableVersion = versionsData?.versions?.find(
+    v => v.attributes.appVersionState === 'PREPARE_FOR_SUBMISSION' ||
+         v.attributes.appVersionState === 'REJECTED',
+  );
+  const displayVersion = editableVersion || versionsData?.versions?.[0];
+  const allVersionLocalizations = versionsData?.localizations || [];
   // Filter localizations to only those belonging to the editable appInfo
   const localizations = useMemo(() => {
     const localizationIds = appInfo?.relationships?.appInfoLocalizations?.data?.map(
@@ -164,6 +186,11 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
     return localizations.find(l => l.attributes.locale === selectedLocale);
   }, [localizations, selectedLocale]);
 
+  const currentVersionLocalization = useMemo(() => {
+    if (!selectedLocale) return null;
+    return allVersionLocalizations.find(l => l.attributes.locale === selectedLocale);
+  }, [allVersionLocalizations, selectedLocale]);
+
   useEffect(() => {
     if (app?.attributes.primaryLocale && !selectedLocale) {
       setSelectedLocale(app.attributes.primaryLocale);
@@ -185,6 +212,18 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
       setHasLocalizationChanges(false);
     }
   }, [currentLocalization]);
+
+  useEffect(() => {
+    if (currentVersionLocalization) {
+      setPromotionalText(currentVersionLocalization.attributes.promotionalText || '');
+      setDescription(currentVersionLocalization.attributes.description || '');
+      setWhatsNew(currentVersionLocalization.attributes.whatsNew || '');
+      setKeywords(currentVersionLocalization.attributes.keywords || '');
+      setSupportUrl(currentVersionLocalization.attributes.supportUrl || '');
+      setMarketingUrl(currentVersionLocalization.attributes.marketingUrl || '');
+      setHasVersionChanges(false);
+    }
+  }, [currentVersionLocalization]);
 
   const handleNameChange = (text: string) => {
     setName(text);
@@ -218,6 +257,55 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
       selectedPrimaryCategory !== currentPrimaryCategoryId ||
         categoryId !== currentSecondaryCategoryId,
     );
+  };
+
+  const checkVersionChanges = useCallback((
+    newPromo: string,
+    newDesc: string,
+    newWhatsNew: string,
+    newKeywords: string,
+    newSupportUrl: string,
+    newMarketingUrl: string,
+  ) => {
+    const orig = currentVersionLocalization?.attributes;
+    return (
+      newPromo !== (orig?.promotionalText || '') ||
+      newDesc !== (orig?.description || '') ||
+      newWhatsNew !== (orig?.whatsNew || '') ||
+      newKeywords !== (orig?.keywords || '') ||
+      newSupportUrl !== (orig?.supportUrl || '') ||
+      newMarketingUrl !== (orig?.marketingUrl || '')
+    );
+  }, [currentVersionLocalization]);
+
+  const handlePromotionalTextChange = (text: string) => {
+    setPromotionalText(text);
+    setHasVersionChanges(checkVersionChanges(text, description, whatsNew, keywords, supportUrl, marketingUrl));
+  };
+
+  const handleDescriptionChange = (text: string) => {
+    setDescription(text);
+    setHasVersionChanges(checkVersionChanges(promotionalText, text, whatsNew, keywords, supportUrl, marketingUrl));
+  };
+
+  const handleWhatsNewChange = (text: string) => {
+    setWhatsNew(text);
+    setHasVersionChanges(checkVersionChanges(promotionalText, description, text, keywords, supportUrl, marketingUrl));
+  };
+
+  const handleKeywordsChange = (text: string) => {
+    setKeywords(text);
+    setHasVersionChanges(checkVersionChanges(promotionalText, description, whatsNew, text, supportUrl, marketingUrl));
+  };
+
+  const handleSupportUrlChange = (text: string) => {
+    setSupportUrl(text);
+    setHasVersionChanges(checkVersionChanges(promotionalText, description, whatsNew, keywords, text, marketingUrl));
+  };
+
+  const handleMarketingUrlChange = (text: string) => {
+    setMarketingUrl(text);
+    setHasVersionChanges(checkVersionChanges(promotionalText, description, whatsNew, keywords, supportUrl, text));
   };
 
   const handleAddLocalization = useCallback(async (locale: string) => {
@@ -321,14 +409,32 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
       );
     }
 
+    if (hasVersionChanges && currentVersionLocalization) {
+      promises.push(
+        updateVersionLocalization.mutateAsync({
+          localizationId: currentVersionLocalization.id,
+          appId,
+          attributes: {
+            promotionalText: promotionalText || undefined,
+            description: description || undefined,
+            whatsNew: whatsNew || undefined,
+            keywords: keywords || undefined,
+            supportUrl: supportUrl || undefined,
+            marketingUrl: marketingUrl || undefined,
+          },
+        }),
+      );
+    }
+
     await Promise.all(promises);
     setHasLocalizationChanges(false);
     setHasCategoryChanges(false);
+    setHasVersionChanges(false);
   };
 
-  const hasChanges = isEditable && (hasLocalizationChanges || hasCategoryChanges);
-  const isSaving = updateLocalization.isPending || updateAppInfo.isPending;
-  const isLoading = appLoading || appInfoLoading;
+  const hasChanges = isEditable && (hasLocalizationChanges || hasCategoryChanges || hasVersionChanges);
+  const isSaving = updateLocalization.isPending || updateAppInfo.isPending || updateVersionLocalization.isPending;
+  const isLoading = appLoading || appInfoLoading || versionsLoading;
   const primaryLocale = app?.attributes.primaryLocale;
 
   const sidebarSections = useMemo(() => {
@@ -439,6 +545,97 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                     editable={isEditable}
                   />
                 </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>Promotional Text</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.multilineInput]}
+                    value={promotionalText}
+                    onChangeText={handlePromotionalTextChange}
+                    placeholder="Promotional text appears at the top of your description"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                    multiline
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>Description</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.multilineInput]}
+                    value={description}
+                    onChangeText={handleDescriptionChange}
+                    placeholder="A description of your app"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                    multiline
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>What's New</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.multilineInput]}
+                    value={whatsNew}
+                    onChangeText={handleWhatsNewChange}
+                    placeholder="What's new in this version"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                    multiline
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>Keywords</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    value={keywords}
+                    onChangeText={handleKeywordsChange}
+                    placeholder="Comma-separated keywords"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>Support URL</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.mono]}
+                    value={supportUrl}
+                    onChangeText={handleSupportUrlChange}
+                    placeholder="https://example.com/support"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.field}>
+                  <View style={styles.fieldHeader}>
+                    <Text style={styles.label}>Marketing URL</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.mono]}
+                    value={marketingUrl}
+                    onChangeText={handleMarketingUrlChange}
+                    placeholder="https://example.com"
+                    placeholderTextColor={colors.textTertiary}
+                    editable={isEditable}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
               </View>
             </View>
 
@@ -447,9 +644,9 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
               <View style={styles.card}>
                 <View style={styles.fieldRow}>
                   <View style={styles.fieldHalf}>
-                    <Text style={styles.label}>Bundle ID</Text>
+                    <Text style={styles.label}>Version</Text>
                     <Text style={[styles.valueText, styles.mono]}>
-                      {app?.attributes.bundleId || '—'}
+                      {displayVersion?.attributes.versionString || '—'}
                     </Text>
                   </View>
                   <View style={styles.fieldHalf}>
@@ -464,15 +661,25 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
                 <View style={styles.divider} />
                 <View style={styles.fieldRow}>
                   <View style={styles.fieldHalf}>
+                    <Text style={styles.label}>Bundle ID</Text>
+                    <Text style={[styles.valueText, styles.mono]}>
+                      {app?.attributes.bundleId || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.fieldHalf}>
                     <Text style={styles.label}>SKU</Text>
                     <Text style={[styles.valueText, styles.mono]}>
                       {app?.attributes.sku || '—'}
                     </Text>
                   </View>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.fieldRow}>
                   <View style={styles.fieldHalf}>
                     <Text style={styles.label}>Apple ID</Text>
                     <Text style={[styles.valueText, styles.mono]}>{app?.id || '—'}</Text>
                   </View>
+                  <View style={styles.fieldHalf} />
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.field}>
@@ -578,14 +785,16 @@ export const AppInfoScreen: React.FC<AppInfoScreenProps> = ({appId}) => {
               </Text>
             </View>
 
-            {(updateLocalization.isError || updateAppInfo.isError) && (
+            {(updateLocalization.isError || updateAppInfo.isError || updateVersionLocalization.isError) && (
               <View style={styles.errorBox}>
                 <Text variant="body" color={colors.error}>
                   {updateLocalization.error instanceof Error
                     ? updateLocalization.error.message
                     : updateAppInfo.error instanceof Error
                       ? updateAppInfo.error.message
-                      : 'Failed to save changes'}
+                      : updateVersionLocalization.error instanceof Error
+                        ? updateVersionLocalization.error.message
+                        : 'Failed to save changes'}
                 </Text>
               </View>
             )}
@@ -694,6 +903,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     padding: 0,
     marginTop: spacing.xs,
+  },
+  multilineInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   valueText: {
     ...typography.body,

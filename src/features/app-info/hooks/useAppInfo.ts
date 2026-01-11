@@ -1,6 +1,12 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
-import {apps, appInfo} from '@libs/appStoreConnect';
-import type {AppInfo, AppInfoLocalization, AppCategory} from '@libs/appStoreConnect';
+import {apps, appInfo, versions} from '@libs/appStoreConnect';
+import type {
+  AppInfo,
+  AppInfoLocalization,
+  AppCategory,
+  AppStoreVersion,
+  AppStoreVersionLocalization,
+} from '@libs/appStoreConnect';
 
 export const appInfoKeys = {
   all: ['app-info'] as const,
@@ -9,6 +15,7 @@ export const appInfoKeys = {
   localizations: (appInfoId: string) =>
     [...appInfoKeys.all, 'localizations', appInfoId] as const,
   categories: () => [...appInfoKeys.all, 'categories'] as const,
+  versions: (appId: string) => [...appInfoKeys.all, 'versions', appId] as const,
 };
 
 export function useApp(appId: string | undefined) {
@@ -152,6 +159,97 @@ export function useDeleteAppInfoLocalization() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: appInfoKeys.infos(variables.appId),
+      });
+    },
+  });
+}
+
+export function useAppStoreVersions(appId: string | undefined) {
+  return useQuery({
+    queryKey: appInfoKeys.versions(appId || ''),
+    queryFn: () => versions.getAppStoreVersionWithLocalizations(appId!),
+    enabled: !!appId,
+    select: data => {
+      const versionList = data.data;
+      const included = data.included || [];
+      const versionLocalizations = included.filter(
+        (item): item is AppStoreVersionLocalization =>
+          (item as AppStoreVersionLocalization).type === 'appStoreVersionLocalizations',
+      );
+      return {versions: versionList, localizations: versionLocalizations};
+    },
+  });
+}
+
+export function useUpdateVersionLocalization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      localizationId,
+      attributes,
+    }: {
+      localizationId: string;
+      appId: string;
+      attributes: {
+        description?: string;
+        keywords?: string;
+        marketingUrl?: string;
+        promotionalText?: string;
+        supportUrl?: string;
+        whatsNew?: string;
+      };
+    }) => versions.updateVersionLocalization(localizationId, attributes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: appInfoKeys.versions(variables.appId),
+      });
+    },
+  });
+}
+
+export function useCreateVersionLocalization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      versionId,
+      locale,
+      attributes,
+    }: {
+      versionId: string;
+      appId: string;
+      locale: string;
+      attributes: {
+        description?: string;
+        keywords?: string;
+        marketingUrl?: string;
+        promotionalText?: string;
+        supportUrl?: string;
+        whatsNew?: string;
+      };
+    }) => versions.createVersionLocalization(versionId, locale, attributes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: appInfoKeys.versions(variables.appId),
+      });
+    },
+  });
+}
+
+export function useDeleteVersionLocalization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      localizationId,
+    }: {
+      localizationId: string;
+      appId: string;
+    }) => versions.deleteVersionLocalization(localizationId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: appInfoKeys.versions(variables.appId),
       });
     },
   });

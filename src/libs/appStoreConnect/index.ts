@@ -46,6 +46,7 @@ export type {
   Platform,
   AppInfo,
   AppInfoLocalization,
+  AppStoreVersionLocalization,
   AppCategory,
   AppStoreState,
   AppStoreAgeRating,
