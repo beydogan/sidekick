@@ -108,6 +108,9 @@ export interface AppStoreVersion {
     app?: {
       data: {type: 'apps'; id: string};
     };
+    appStoreVersionLocalizations?: {
+      data?: Array<{type: 'appStoreVersionLocalizations'; id: string}>;
+    };
   };
 }
 

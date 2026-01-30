@@ -16,16 +16,14 @@ export async function listAppStoreVersions(
   });
 }
 
-export async function getAppStoreVersionWithLocalizations(
+export async function getAppStoreVersions(
   appId: string,
-): Promise<APIListResponse<AppStoreVersion> & {included?: AppStoreVersionLocalization[]}> {
-  return get<APIListResponse<AppStoreVersion> & {included?: AppStoreVersionLocalization[]}>(
+): Promise<APIListResponse<AppStoreVersion>> {
+  return get<APIListResponse<AppStoreVersion>>(
     `/apps/${appId}/appStoreVersions`,
     {
       'fields[appStoreVersions]': 'versionString,platform,appVersionState,appStoreState,releaseType,createdDate',
-      'fields[appStoreVersionLocalizations]': 'locale,description,keywords,marketingUrl,promotionalText,supportUrl,whatsNew',
-      include: 'appStoreVersionLocalizations',
-      limit: '10',
+      limit: '5',
     },
   );
 }

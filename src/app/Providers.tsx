@@ -4,6 +4,7 @@
 
 import React from 'react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {AIContextProvider} from '@features/ai-assistant';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +21,8 @@ interface ProvidersProps {
 
 export const Providers: React.FC<ProvidersProps> = ({children}) => {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AIContextProvider>{children}</AIContextProvider>
+    </QueryClientProvider>
   );
 };

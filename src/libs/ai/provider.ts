@@ -13,7 +13,7 @@ export function createProvider(config: ProviderConfig): LanguageModel {
   switch (config.provider) {
     case 'openai': {
       const openai = createOpenAI({apiKey: config.apiKey});
-      return openai('gpt-4o');
+      return openai('gpt-5.2');
     }
     case 'anthropic': {
       const anthropic = createAnthropic({apiKey: config.apiKey});
@@ -31,12 +31,12 @@ export function createProvider(config: ProviderConfig): LanguageModel {
 export function getDefaultModel(provider: AIProvider): string {
   switch (provider) {
     case 'openai':
-      return 'gpt-4o';
+      return 'gpt-5.2';
     case 'anthropic':
       return 'claude-sonnet-4-20250514';
     case 'google':
       return 'gemini-1.5-pro';
     default:
-      return 'gpt-4o';
+      return 'gpt-5.2';
   }
 }

@@ -165,20 +165,43 @@ export function useDeleteAppInfoLocalization() {
 }
 
 export function useAppStoreVersions(appId: string | undefined) {
-  return useQuery({
+  // First, fetch versions to find the editable one
+  const versionsQuery = useQuery({
     queryKey: appInfoKeys.versions(appId || ''),
-    queryFn: () => versions.getAppStoreVersionWithLocalizations(appId!),
+    queryFn: () => versions.getAppStoreVersions(appId!),
     enabled: !!appId,
     select: data => {
       const versionList = data.data;
-      const included = data.included || [];
-      const versionLocalizations = included.filter(
-        (item): item is AppStoreVersionLocalization =>
-          (item as AppStoreVersionLocalization).type === 'appStoreVersionLocalizations',
+      const editableVersion = versionList.find(
+        v =>
+          v.attributes.appVersionState === 'PREPARE_FOR_SUBMISSION' ||
+          v.attributes.appVersionState === 'REJECTED',
       );
-      return {versions: versionList, localizations: versionLocalizations};
+      return {
+        editableVersion: editableVersion || null,
+        isEditable: !!editableVersion,
+      };
     },
   });
+
+  const editableVersionId = versionsQuery.data?.editableVersion?.id;
+
+  // Then, fetch localizations for the editable version
+  const localizationsQuery = useQuery({
+    queryKey: [...appInfoKeys.versions(appId || ''), 'localizations', editableVersionId],
+    queryFn: () => versions.getVersionLocalizations(editableVersionId!),
+    enabled: !!editableVersionId,
+    select: data => data.data,
+  });
+
+  return {
+    data: {
+      editableVersion: versionsQuery.data?.editableVersion || null,
+      localizations: localizationsQuery.data || [],
+      isEditable: versionsQuery.data?.isEditable || false,
+    },
+    isLoading: versionsQuery.isLoading || (!!editableVersionId && localizationsQuery.isLoading),
+  };
 }
 
 export function useUpdateVersionLocalization() {

@@ -2,7 +2,7 @@
  * TextInput - Text input without macOS focus ring
  */
 
-import React from 'react';
+import React, {forwardRef} from 'react';
 import {
   TextInput as RNTextInput,
   TextInputProps as RNTextInputProps,
@@ -17,22 +17,20 @@ interface TextInputProps extends Omit<RNTextInputProps, 'style'> {
   mono?: boolean;
 }
 
-export const TextInput: React.FC<TextInputProps> = ({
-  style,
-  mono = false,
-  placeholderTextColor = colors.textTertiary,
-  ...props
-}) => {
-  return (
-    <RNTextInput
-      {...props}
-      style={[styles.input, mono && styles.mono, style]}
-      placeholderTextColor={placeholderTextColor}
-      // @ts-expect-error - macOS specific prop to disable focus ring
-      enableFocusRing={false}
-    />
-  );
-};
+export const TextInput = forwardRef<RNTextInput, TextInputProps>(
+  ({style, mono = false, placeholderTextColor = colors.textTertiary, ...props}, ref) => {
+    return (
+      <RNTextInput
+        ref={ref}
+        {...props}
+        style={[styles.input, mono && styles.mono, style]}
+        placeholderTextColor={placeholderTextColor}
+        // @ts-expect-error - macOS specific prop to disable focus ring
+        enableFocusRing={false}
+      />
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   input: {

@@ -1,0 +1,80 @@
+export const LOCALE_NAMES: Record<string, string> = {
+  'en-US': 'English (U.S.)',
+  'en-GB': 'English (U.K.)',
+  'en-AU': 'English (Australia)',
+  'en-CA': 'English (Canada)',
+  'de-DE': 'German',
+  'fr-FR': 'French',
+  'fr-CA': 'French (Canada)',
+  'es-ES': 'Spanish (Spain)',
+  'es-MX': 'Spanish (Mexico)',
+  'it': 'Italian',
+  'pt-BR': 'Portuguese (Brazil)',
+  'pt-PT': 'Portuguese (Portugal)',
+  'ja': 'Japanese',
+  'ko': 'Korean',
+  'zh-Hans': 'Chinese (Simplified)',
+  'zh-Hant': 'Chinese (Traditional)',
+  'nl-NL': 'Dutch',
+  'ru': 'Russian',
+  'tr': 'Turkish',
+  'ar-SA': 'Arabic',
+  'th': 'Thai',
+  'vi': 'Vietnamese',
+  'id': 'Indonesian',
+  'ms': 'Malay',
+  'sv': 'Swedish',
+  'da': 'Danish',
+  'fi': 'Finnish',
+  'no': 'Norwegian',
+  'pl': 'Polish',
+  'cs': 'Czech',
+  'el': 'Greek',
+  'he': 'Hebrew',
+  'hi': 'Hindi',
+  'hu': 'Hungarian',
+  'ro': 'Romanian',
+  'sk': 'Slovak',
+  'uk': 'Ukrainian',
+  'ca': 'Catalan',
+  'hr': 'Croatian',
+};
+
+export const ALL_LOCALES = Object.keys(LOCALE_NAMES);
+
+export const CATEGORY_NAMES: Record<string, string> = {
+  BOOKS: 'Books',
+  BUSINESS: 'Business',
+  DEVELOPER_TOOLS: 'Developer Tools',
+  EDUCATION: 'Education',
+  ENTERTAINMENT: 'Entertainment',
+  FINANCE: 'Finance',
+  FOOD_AND_DRINK: 'Food & Drink',
+  GAMES: 'Games',
+  GRAPHICS_AND_DESIGN: 'Graphics & Design',
+  HEALTH_AND_FITNESS: 'Health & Fitness',
+  LIFESTYLE: 'Lifestyle',
+  MAGAZINES_AND_NEWSPAPERS: 'Magazines & Newspapers',
+  MEDICAL: 'Medical',
+  MUSIC: 'Music',
+  NAVIGATION: 'Navigation',
+  NEWS: 'News',
+  PHOTO_AND_VIDEO: 'Photo & Video',
+  PRODUCTIVITY: 'Productivity',
+  REFERENCE: 'Reference',
+  SHOPPING: 'Shopping',
+  SOCIAL_NETWORKING: 'Social Networking',
+  SPORTS: 'Sports',
+  STICKERS: 'Stickers',
+  TRAVEL: 'Travel',
+  UTILITIES: 'Utilities',
+  WEATHER: 'Weather',
+};
+
+export function getLocaleName(locale: string): string {
+  return LOCALE_NAMES[locale] || locale;
+}
+
+export function getCategoryName(categoryId: string): string {
+  return CATEGORY_NAMES[categoryId] || categoryId;
+}

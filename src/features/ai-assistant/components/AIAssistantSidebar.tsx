@@ -3,7 +3,7 @@
  */
 
 import React, {useState, useRef, useCallback, useEffect} from 'react';
-import {View, StyleSheet, ScrollView, ActivityIndicator} from 'react-native';
+import {View, StyleSheet, ScrollView, ActivityIndicator, TextInput as RNTextInput} from 'react-native';
 import {Sparkles, Send, AlertCircle} from 'lucide-react-native';
 import {colors, layout, spacing, typography, radii} from '@theme';
 import {Text, Pressable, TextInput} from '@ui/primitives';
@@ -14,6 +14,7 @@ export const AIAssistantSidebar: React.FC = () => {
     useAIChat();
   const [input, setInput] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const inputRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
     setTimeout(() => {
@@ -26,6 +27,7 @@ export const AIAssistantSidebar: React.FC = () => {
     if (!trimmed || isLoading) return;
 
     setInput('');
+    inputRef.current?.focus();
     await sendMessage(trimmed);
   }, [input, isLoading, sendMessage]);
 
@@ -92,6 +94,7 @@ export const AIAssistantSidebar: React.FC = () => {
 
       <View style={styles.inputBar}>
         <TextInput
+          ref={inputRef}
           style={styles.input}
           value={input}
           onChangeText={setInput}
